@@ -8,6 +8,8 @@ export type CategoryStat = {
   icon: string | null;
   isDefault: number;
   total: number;
+  count: number; // число трат в категории
+  avg: number; // средний чек по категории
   share: number; // доля 0..1
 };
 
@@ -37,7 +39,8 @@ export type TripStats = {
   avgPerDay: number;
   days: number;
   forecastTotal: number | null; // прогноз итога к end_date (если задан)
-  budgetDaysLeft: number | null; // на сколько дней хватит остатка при текущем темпе
+  daysLeft: number | null; // дней до конца поездки (включая сегодня)
+  dailyAllowance: number | null; // сколько можно тратить в день на остаток дней
   avgTransaction: number; // средний чек (в базовой)
   maxTransaction: number; // самая большая трата (в базовой)
   hasUnconverted: boolean; // часть трат без курса (офлайн)
@@ -94,6 +97,7 @@ export function computeTripStats(
     const existing = catMap.get(exp.category_id);
     if (existing) {
       existing.total += value;
+      existing.count += 1;
     } else {
       catMap.set(exp.category_id, {
         categoryId: exp.category_id,
@@ -101,6 +105,8 @@ export function computeTripStats(
         icon: exp.category_icon,
         isDefault: exp.category_is_default,
         total: value,
+        count: 1,
+        avg: 0,
         share: 0,
       });
     }
@@ -114,7 +120,11 @@ export function computeTripStats(
   }
 
   const byCategory = [...catMap.values()]
-    .map((c) => ({ ...c, share: total > 0 ? c.total / total : 0 }))
+    .map((c) => ({
+      ...c,
+      avg: c.count > 0 ? c.total / c.count : 0,
+      share: total > 0 ? c.total / total : 0,
+    }))
     .sort((a, b) => b.total - a.total);
 
   const byDay = [...dayMap.entries()]
@@ -148,10 +158,16 @@ export function computeTripStats(
   const remaining = budget != null ? budget - total : null;
   const overBudget = remaining != null && remaining < 0;
 
-  const budgetDaysLeft =
-    remaining != null && remaining > 0 && avgPerDay > 0
-      ? Math.floor(remaining / avgPerDay)
-      : null;
+  // Сколько можно тратить в день на оставшиеся дни поездки (если задан конец)
+  let daysLeft: number | null = null;
+  let dailyAllowance: number | null = null;
+  if (trip.end_date != null && trip.end_date >= startOfDay(Date.now())) {
+    daysLeft = dayCount(Date.now(), trip.end_date);
+    if (remaining != null && remaining > 0 && daysLeft > 0) {
+      dailyAllowance = remaining / daysLeft;
+    }
+  }
+
 
   return {
     base,
@@ -167,7 +183,8 @@ export function computeTripStats(
     avgPerDay,
     days,
     forecastTotal,
-    budgetDaysLeft,
+    daysLeft,
+    dailyAllowance,
     avgTransaction,
     maxTransaction,
     hasUnconverted,

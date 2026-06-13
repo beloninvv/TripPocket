@@ -52,7 +52,7 @@
     "byCurrency": "По валютам",
     "byWeekday": "По дням недели",
     "cumulative": "Накопительно",
-    "budgetDaysLeft": "Хватит на {{days}} дн. при текущем темпе",
+    "dailyAllowance": "Можно тратить ~{{amount}}/день · осталось {{days}} дн.",
     "perDay": "Среднее в день",
     "forecast": "Прогноз до конца",
     "transactions": "Трат",

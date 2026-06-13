@@ -52,7 +52,7 @@
     "byCurrency": "By currency",
     "byWeekday": "By weekday",
     "cumulative": "Cumulative",
-    "budgetDaysLeft": "Lasts {{days}} days at current pace",
+    "dailyAllowance": "Can spend ~{{amount}}/day · {{days}} days left",
     "perDay": "Avg per day",
     "forecast": "Forecast to end",
     "transactions": "Expenses",

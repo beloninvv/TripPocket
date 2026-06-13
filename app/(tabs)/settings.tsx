@@ -193,7 +193,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.footer}>TripPocket · сборка 4</Text>
+        <Text style={styles.footer}>TripPocket · сборка 5</Text>
       </ScrollView>
     </Screen>
   );

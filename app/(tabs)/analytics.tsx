@@ -102,9 +102,13 @@ export default function AnalyticsScreen() {
             </View>
           ) : null}
 
-          {stats.budgetDaysLeft != null ? (
-            <Text style={styles.paceLine}>
-              ⏳ {t('analytics.budgetDaysLeft', { days: stats.budgetDaysLeft })}
+          {stats.dailyAllowance != null && stats.daysLeft != null ? (
+            <Text style={styles.allowanceLine}>
+              💸{' '}
+              {t('analytics.dailyAllowance', {
+                amount: formatAmount(stats.dailyAllowance, stats.base),
+                days: stats.daysLeft,
+              })}
             </Text>
           ) : null}
 
@@ -158,9 +162,14 @@ export default function AnalyticsScreen() {
                 <View
                   style={[styles.dot, { backgroundColor: colors.chart[i % colors.chart.length] }]}
                 />
-                <Text style={styles.legendName}>
-                  {categoryLabel({ name: c.name, is_default: c.isDefault }, t)}
-                </Text>
+                <View style={styles.legendNameWrap}>
+                  <Text style={styles.legendName}>
+                    {categoryLabel({ name: c.name, is_default: c.isDefault }, t)}
+                  </Text>
+                  <Text style={styles.legendSub}>
+                    {c.count} · ⌀ {formatAmount(c.avg, stats.base)}
+                  </Text>
+                </View>
                 <Text style={styles.legendPct}>{Math.round(c.share * 100)}%</Text>
                 <Text style={styles.legendAmount}>{formatAmount(c.total, stats.base)}</Text>
               </View>
@@ -289,7 +298,9 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   legend: { gap: spacing.sm },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   dot: { width: 10, height: 10, borderRadius: 5 },
-  legendName: { flex: 1, fontSize: fontSize.sm, color: colors.text },
+  legendNameWrap: { flex: 1 },
+  legendName: { fontSize: fontSize.sm, color: colors.text },
+  legendSub: { fontSize: fontSize.xs, color: colors.textFaint },
   legendPct: { fontSize: fontSize.sm, color: colors.textMuted, width: 44, textAlign: 'right' },
   legendAmount: {
     fontSize: fontSize.sm,
@@ -300,7 +311,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   axisLabel: { color: colors.textFaint, fontSize: 10 },
   divider: { height: 1, backgroundColor: colors.border },
-  paceLine: { fontSize: fontSize.sm, color: colors.warning },
+  allowanceLine: { fontSize: fontSize.sm, color: colors.primary, fontWeight: fontWeight.medium },
   currencyRow: {
     flexDirection: 'row',
     alignItems: 'center',
