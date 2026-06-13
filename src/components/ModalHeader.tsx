@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, fontWeight, spacing } from '../theme';
+import { Colors, fontSize, fontWeight, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   title: string;
@@ -9,6 +11,8 @@ type Props = {
 };
 
 export function ModalHeader({ title, onClose }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.header}>
       <Text style={styles.title}>{title}</Text>
@@ -19,7 +23,7 @@ export function ModalHeader({ title, onClose }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',

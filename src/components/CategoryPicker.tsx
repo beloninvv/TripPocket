@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
 import type { CategoryRow } from '../db/types';
 import { categoryLabel } from '../lib/category';
-import { colors, fontSize, fontWeight, radius, spacing } from '../theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   categories: CategoryRow[];
@@ -14,6 +16,8 @@ type Props = {
 
 export function CategoryPicker({ categories, value, onChange }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.wrap}>
       {categories.map((c) => {
@@ -41,7 +45,7 @@ export function CategoryPicker({ categories, value, onChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   wrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',

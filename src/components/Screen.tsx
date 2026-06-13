@@ -1,8 +1,9 @@
-import { ReactNode } from 'react';
+import { ReactNode, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, fontSize, fontWeight, spacing } from '../theme';
+import { Colors, fontSize, fontWeight, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   title?: string;
@@ -11,6 +12,8 @@ type Props = {
 
 /** Базовая обёртка экрана: safe-area, фон, опциональный заголовок. */
 export function Screen({ title, children }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {title ? <Text style={styles.title}>{title}</Text> : null}
@@ -19,7 +22,7 @@ export function Screen({ title, children }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.background,

@@ -68,6 +68,10 @@
   "settings": {
     "title": "Настройки",
     "language": "Язык",
+    "theme": "Тема",
+    "theme_system": "Системная",
+    "theme_light": "Светлая",
+    "theme_dark": "Тёмная",
     "baseCurrency": "Базовая валюта",
     "categories": "Категории",
     "export": "Экспорт данных",

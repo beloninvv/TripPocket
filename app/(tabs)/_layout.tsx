@@ -2,10 +2,12 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
-import { colors, fontSize } from '../../src/theme';
+import { fontSize } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function TabsLayout() {
   const { t } = useTranslation();
+  const { colors } = useTheme();
 
   return (
     <Tabs

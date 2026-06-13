@@ -10,10 +10,13 @@ import { categoryLabel } from '../../src/lib/category';
 import { formatAmount } from '../../src/lib/currencies';
 import { formatDay } from '../../src/lib/date';
 import { computeTripStats } from '../../src/services/analytics';
-import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function AnalyticsScreen() {
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { trip } = useActiveTrip();
   const { expenses } = useExpenses(trip?.id ?? null);
 
@@ -154,6 +157,8 @@ export default function AnalyticsScreen() {
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.stat}>
       <Text style={styles.muted}>{label}</Text>
@@ -162,7 +167,7 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
   muted: { color: colors.textMuted, fontSize: fontSize.sm },

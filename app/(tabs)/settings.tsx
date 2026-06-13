@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -10,13 +10,17 @@ import { LANGUAGES, Language, setLanguage } from '../../src/i18n';
 import { getSetting, setSetting } from '../../src/repositories/settingsRepo';
 import { exportCsv, exportJson, importJson } from '../../src/services/export';
 import { fetchAndCacheRates } from '../../src/services/currency';
-import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { ThemeMode, useTheme } from '../../src/theme/ThemeProvider';
 
 const LANGUAGE_LABELS: Record<Language, string> = { ru: 'Русский', en: 'English' };
+const THEME_MODES: ThemeMode[] = ['system', 'light', 'dark'];
 
 export default function SettingsScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const { colors, mode, setMode } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [lang, setLang] = useState<Language>(i18n.language as Language);
   const [baseCurrency, setBaseCurrency] = useState('RUB');
@@ -111,6 +115,21 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* Тема оформления */}
+        <View style={styles.section}>
+          <Text style={styles.label}>{t('settings.theme')}</Text>
+          <View style={styles.chipRow}>
+            {THEME_MODES.map((m) => (
+              <Chip
+                key={m}
+                label={t(`settings.theme_${m}`)}
+                active={mode === m}
+                onPress={() => setMode(m)}
+              />
+            ))}
+          </View>
+        </View>
+
         {/* Базовая валюта по умолчанию */}
         <View style={styles.section}>
           <Text style={styles.label}>{t('settings.baseCurrency')}</Text>
@@ -164,6 +183,8 @@ function Chip({
   active: boolean;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipActive]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -184,6 +205,8 @@ function ActionRow({
   loading?: boolean;
   last?: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Pressable
       onPress={onPress}
@@ -201,7 +224,7 @@ function ActionRow({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   body: { padding: spacing.lg, gap: spacing.xl },
   section: { gap: spacing.sm },
   label: { fontSize: fontSize.sm, color: colors.textMuted },

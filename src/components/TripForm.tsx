@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
@@ -6,7 +6,8 @@ import { Button } from './Button';
 import { CurrencyPicker } from './CurrencyPicker';
 import { DateField } from './DateField';
 import { TextField } from './TextField';
-import { colors, fontSize, spacing } from '../theme';
+import { Colors, fontSize, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 export type TripFormValues = {
   name: string;
@@ -25,6 +26,8 @@ type Props = {
 
 export function TripForm({ initial, submitLabel, onSubmit, onDelete }: Props) {
   const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const [name, setName] = useState(initial.name);
   const [baseCurrency, setBaseCurrency] = useState(initial.baseCurrency);
@@ -110,7 +113,7 @@ function parseAmount(raw: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   body: { padding: spacing.lg, gap: spacing.lg },
   field: { gap: spacing.sm },
   label: { fontSize: fontSize.sm, color: colors.textMuted },

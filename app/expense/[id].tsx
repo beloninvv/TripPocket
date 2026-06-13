@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -15,12 +15,15 @@ import {
   updateExpense,
 } from '../../src/repositories/expensesRepo';
 import { convertToBase } from '../../src/services/currency';
-import { colors, fontSize, spacing } from '../../src/theme';
+import { Colors, fontSize, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function EditExpenseScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { trip } = useActiveTrip();
   const { categories } = useCategories();
 
@@ -123,7 +126,7 @@ function parseAmount(raw: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   body: { padding: spacing.lg, gap: spacing.lg },

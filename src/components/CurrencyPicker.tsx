@@ -1,7 +1,9 @@
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import { CURRENCIES } from '../lib/currencies';
-import { colors, fontSize, fontWeight, radius, spacing } from '../theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   value: string;
@@ -9,6 +11,8 @@ type Props = {
 };
 
 export function CurrencyPicker({ value, onChange }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <ScrollView
       horizontal
@@ -32,7 +36,7 @@ export function CurrencyPicker({ value, onChange }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   row: { gap: spacing.sm, paddingVertical: spacing.xs },
   chip: {
     flexDirection: 'row',

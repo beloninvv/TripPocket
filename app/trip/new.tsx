@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -8,11 +8,14 @@ import { TripForm, TripFormValues } from '../../src/components/TripForm';
 import { getSetting } from '../../src/repositories/settingsRepo';
 import { createTrip } from '../../src/repositories/tripsRepo';
 import { ensureRatesFresh } from '../../src/services/currency';
-import { colors } from '../../src/theme';
+import { Colors } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function NewTripScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [defaultCurrency, setDefaultCurrency] = useState('RUB');
 
   useEffect(() => {
@@ -49,6 +52,6 @@ export default function NewTripScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
 });

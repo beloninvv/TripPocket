@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -6,12 +6,15 @@ import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../src/components/ModalHeader';
 import { TripForm, TripFormValues } from '../../src/components/TripForm';
 import { deleteTrip, getTrip, updateTrip } from '../../src/repositories/tripsRepo';
-import { colors } from '../../src/theme';
+import { Colors } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function EditTripScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [initial, setInitial] = useState<TripFormValues | null>(null);
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export default function EditTripScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

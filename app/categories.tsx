@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -14,11 +14,14 @@ import {
   deleteCategory,
   listCategories,
 } from '../src/repositories/categoriesRepo';
-import { colors, fontSize, fontWeight, radius, spacing } from '../src/theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../src/theme';
+import { useTheme } from '../src/theme/ThemeProvider';
 
 export default function CategoriesScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [categories, setCategories] = useState<CategoryRow[]>([]);
   const [name, setName] = useState('');
 
@@ -90,7 +93,7 @@ export default function CategoriesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   addRow: {
     flexDirection: 'row',

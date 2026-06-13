@@ -1,10 +1,17 @@
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
+import { ActivityIndicator, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 import { initDatabase } from '../db';
 import { getSetting } from '../repositories/settingsRepo';
 import { Language, LANGUAGES, setLanguage } from '../i18n';
-import { colors, fontSize, spacing } from '../theme';
+import { Colors, darkColors, fontSize, lightColors, spacing } from '../theme';
 
 type DbContextValue = { ready: boolean };
 
@@ -21,6 +28,10 @@ export function useDatabaseReady() {
 export function DatabaseProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Сплэш показывается до инициализации БД, поэтому тему берём из системы.
+  const scheme = useColorScheme();
+  const colors = scheme === 'dark' ? darkColors : lightColors;
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   useEffect(() => {
     let cancelled = false;
@@ -60,7 +71,7 @@ export function DatabaseProvider({ children }: { children: ReactNode }) {
   return <DbContext.Provider value={{ ready }}>{children}</DbContext.Provider>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   center: {
     flex: 1,
     alignItems: 'center',

@@ -68,6 +68,10 @@
   "settings": {
     "title": "Settings",
     "language": "Language",
+    "theme": "Theme",
+    "theme_system": "System",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
     "baseCurrency": "Base currency",
     "categories": "Categories",
     "export": "Export data",

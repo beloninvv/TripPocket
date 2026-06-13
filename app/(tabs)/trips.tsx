@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,11 +8,14 @@ import { Screen } from '../../src/components/Screen';
 import { useActiveTrip, useTrips } from '../../src/hooks/data';
 import { formatAmount } from '../../src/lib/currencies';
 import { setActiveTrip } from '../../src/repositories/tripsRepo';
-import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function TripsScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { trips, reload } = useTrips();
   const { trip: active, reload: reloadActive } = useActiveTrip();
 
@@ -68,7 +72,7 @@ export default function TripsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   list: { padding: spacing.lg, gap: spacing.md, paddingBottom: 96 },
   empty: {
     textAlign: 'center',

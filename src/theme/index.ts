@@ -1,36 +1,63 @@
 /**
- * Дизайн-токены — чистый минимализм, светлая тема.
- * Один источник правды для цветов, отступов и типографики.
+ * Дизайн-токены. Цвета вынесены в две палитры (светлая/тёмная) — выбираются
+ * через ThemeProvider/useTheme. Размеры/отступы/типографика от темы не зависят.
  */
 
-export const colors = {
-  // Базовые
+export type Colors = {
+  background: string;
+  surface: string;
+  surfaceAlt: string;
+  border: string;
+  text: string;
+  textMuted: string;
+  textFaint: string;
+  primary: string;
+  primaryMuted: string;
+  onPrimary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  chart: readonly string[];
+};
+
+const chart = [
+  '#2563EB', '#16A34A', '#D97706', '#DC2626', '#7C3AED',
+  '#0891B2', '#DB2777', '#65A30D', '#EA580C', '#94A3B8',
+] as const;
+
+export const lightColors: Colors = {
   background: '#FFFFFF',
   surface: '#F7F8FA',
   surfaceAlt: '#EEF0F4',
   border: '#E3E6EC',
-
-  // Текст
   text: '#11151C',
   textMuted: '#6B7280',
   textFaint: '#9CA3AF',
-
-  // Акцент
   primary: '#2563EB',
   primaryMuted: '#DBEAFE',
   onPrimary: '#FFFFFF',
-
-  // Семантика
   success: '#16A34A',
   warning: '#D97706',
   danger: '#DC2626',
+  chart,
+};
 
-  // Палитра для категорий / диаграмм
-  chart: [
-    '#2563EB', '#16A34A', '#D97706', '#DC2626', '#7C3AED',
-    '#0891B2', '#DB2777', '#65A30D', '#EA580C', '#4B5563',
-  ],
-} as const;
+export const darkColors: Colors = {
+  background: '#0B0E14',
+  surface: '#151A22',
+  surfaceAlt: '#1E242E',
+  border: '#2A313C',
+  text: '#F3F5F8',
+  textMuted: '#9AA4B2',
+  textFaint: '#69727F',
+  primary: '#3B82F6',
+  primaryMuted: '#1E3A5F',
+  onPrimary: '#FFFFFF',
+  success: '#22C55E',
+  warning: '#F59E0B',
+  danger: '#EF4444',
+  chart,
+};
 
 export const spacing = {
   xs: 4,
@@ -64,6 +91,3 @@ export const fontWeight = {
   semibold: '600',
   bold: '700',
 } as const;
-
-export const theme = { colors, spacing, radius, fontSize, fontWeight };
-export type Theme = typeof theme;

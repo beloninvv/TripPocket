@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, ViewStyle } from 'react-native';
 
-import { colors, fontSize, fontWeight, radius, spacing } from '../theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   title: string;
@@ -19,6 +21,8 @@ export function Button({
   loading,
   style,
 }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const isDisabled = disabled || loading;
   return (
     <Pressable
@@ -50,7 +54,7 @@ export function Button({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   base: {
     height: 52,
     borderRadius: radius.md,

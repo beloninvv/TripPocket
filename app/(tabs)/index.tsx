@@ -24,11 +24,14 @@ import { addExpense } from '../../src/repositories/expensesRepo';
 import { getSetting, setSetting } from '../../src/repositories/settingsRepo';
 import { convertToBase } from '../../src/services/currency';
 import { computeTripStats } from '../../src/services/analytics';
-import { colors, fontSize, fontWeight, spacing } from '../../src/theme';
+import { Colors, fontSize, fontWeight, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function AddExpenseScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { trip } = useActiveTrip();
   const { categories } = useCategories();
   const { expenses, reload: reloadExpenses } = useExpenses(trip?.id ?? null);
@@ -199,7 +202,7 @@ function parseAmount(raw: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   hint: { color: colors.textMuted, fontSize: fontSize.md, textAlign: 'center' },

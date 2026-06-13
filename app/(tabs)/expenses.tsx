@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -11,11 +11,14 @@ import { formatAmount } from '../../src/lib/currencies';
 import { formatDayLabel } from '../../src/lib/date';
 import type { ExpenseWithCategory } from '../../src/repositories/expensesRepo';
 import { deleteExpense } from '../../src/repositories/expensesRepo';
-import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
+import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function ExpensesScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { trip } = useActiveTrip();
   const { categories } = useCategories();
   const [filter, setFilter] = useState<string | null>(null);
@@ -123,6 +126,8 @@ function FilterChip({
   active: boolean;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <Pressable onPress={onPress} style={[styles.filterChip, active && styles.filterChipActive]}>
       <Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text>
@@ -130,7 +135,7 @@ function FilterChip({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   empty: {
     textAlign: 'center',

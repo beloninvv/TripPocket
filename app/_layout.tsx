@@ -5,26 +5,37 @@ import { StatusBar } from 'expo-status-bar';
 
 import '../src/i18n';
 import { DatabaseProvider } from '../src/providers/DatabaseProvider';
-import { colors } from '../src/theme';
+import { ThemeProvider, useTheme } from '../src/theme/ThemeProvider';
+
+function ThemedApp() {
+  const { colors, isDark } = useTheme();
+  return (
+    <>
+      <StatusBar style={isDark ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: colors.background },
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="trip/new" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="trip/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="expense/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="categories" options={{ presentation: 'modal' }} />
+      </Stack>
+    </>
+  );
+}
 
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <StatusBar style="dark" />
         <DatabaseProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.background },
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="trip/new" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="trip/[id]" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="expense/[id]" options={{ presentation: 'modal' }} />
-            <Stack.Screen name="categories" options={{ presentation: 'modal' }} />
-          </Stack>
+          <ThemeProvider>
+            <ThemedApp />
+          </ThemeProvider>
         </DatabaseProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

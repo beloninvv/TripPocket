@@ -1,9 +1,10 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 
-import { colors, fontSize, radius, spacing } from '../theme';
+import { Colors, fontSize, radius, spacing } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   label: string;
@@ -14,6 +15,8 @@ type Props = {
 
 export function DateField({ label, value, onChange, locale = 'ru' }: Props) {
   const { t } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
 
   const display =
@@ -65,7 +68,7 @@ export function DateField({ label, value, onChange, locale = 'ru' }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   wrap: { gap: spacing.xs },
   label: { fontSize: fontSize.sm, color: colors.textMuted },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radius } from '../theme';
+import { Colors, radius } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 
 type Props = {
   /** Доля заполнения 0..1 (обрезается). */
@@ -8,16 +10,23 @@ type Props = {
   color?: string;
 };
 
-export function ProgressBar({ progress, color = colors.primary }: Props) {
+export function ProgressBar({ progress, color }: Props) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const clamped = Math.max(0, Math.min(1, progress));
   return (
     <View style={styles.track}>
-      <View style={[styles.fill, { width: `${clamped * 100}%`, backgroundColor: color }]} />
+      <View
+        style={[
+          styles.fill,
+          { width: `${clamped * 100}%`, backgroundColor: color ?? colors.primary },
+        ]}
+      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: Colors) => StyleSheet.create({
   track: {
     height: 10,
     borderRadius: radius.pill,
