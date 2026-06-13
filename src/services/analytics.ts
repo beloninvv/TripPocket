@@ -16,6 +16,13 @@ export type DayStat = {
   total: number;
 };
 
+export type CurrencyStat = {
+  currency: string;
+  amountOriginal: number; // сумма в самой валюте
+  amountBase: number; // пересчёт в базовую
+  count: number;
+};
+
 export type TripStats = {
   base: string;
   total: number;
@@ -24,11 +31,16 @@ export type TripStats = {
   overBudget: boolean;
   byCategory: CategoryStat[];
   byDay: DayStat[];
+  byCurrency: CurrencyStat[];
+  cumulative: DayStat[]; // накопительный итог по дням
   avgPerDay: number;
   days: number;
   forecastTotal: number | null; // прогноз итога к end_date (если задан)
+  avgTransaction: number; // средний чек (в базовой)
+  maxTransaction: number; // самая большая трата (в базовой)
   hasUnconverted: boolean; // часть трат без курса (офлайн)
-  count: number;
+  count: number; // всего трат
+  convertedCount: number; // трат, учтённых в базовой валюте
 };
 
 /** Сумма траты в базовой валюте, либо null если курс неизвестен. */
@@ -45,9 +57,12 @@ export function computeTripStats(
   const base = trip.base_currency;
   let total = 0;
   let hasUnconverted = false;
+  let convertedCount = 0;
+  let maxTransaction = 0;
 
   const catMap = new Map<string, CategoryStat>();
   const dayMap = new Map<number, number>();
+  const curMap = new Map<string, CurrencyStat>();
 
   for (const exp of expenses) {
     const value = baseAmount(exp, base);
@@ -56,6 +71,22 @@ export function computeTripStats(
       continue;
     }
     total += value;
+    convertedCount += 1;
+    if (value > maxTransaction) maxTransaction = value;
+
+    const cur = curMap.get(exp.currency);
+    if (cur) {
+      cur.amountOriginal += exp.amount;
+      cur.amountBase += value;
+      cur.count += 1;
+    } else {
+      curMap.set(exp.currency, {
+        currency: exp.currency,
+        amountOriginal: exp.amount,
+        amountBase: value,
+        count: 1,
+      });
+    }
 
     const existing = catMap.get(exp.category_id);
     if (existing) {
@@ -83,6 +114,17 @@ export function computeTripStats(
     .map(([day, t]) => ({ day, total: t }))
     .sort((a, b) => a.day - b.day);
 
+  const byCurrency = [...curMap.values()].sort((a, b) => b.amountBase - a.amountBase);
+
+  // Накопительный итог по дням
+  let running = 0;
+  const cumulative: DayStat[] = byDay.map((d) => {
+    running += d.total;
+    return { day: d.day, total: running };
+  });
+
+  const avgTransaction = convertedCount > 0 ? total / convertedCount : 0;
+
   // Период: от старта поездки/первой траты до конца/сегодня
   const firstTs = trip.start_date ?? (byDay.length ? byDay[0].day : Date.now());
   const lastTs = Math.min(trip.end_date ?? Date.now(), Date.now());
@@ -107,10 +149,15 @@ export function computeTripStats(
     overBudget,
     byCategory,
     byDay,
+    byCurrency,
+    cumulative,
     avgPerDay,
     days,
     forecastTotal,
+    avgTransaction,
+    maxTransaction,
     hasUnconverted,
     count: expenses.length,
+    convertedCount,
   };
 }

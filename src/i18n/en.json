@@ -20,6 +20,7 @@
     "currency": "Currency",
     "category": "Category",
     "date": "Date",
+    "dateTime": "Date & time",
     "all": "All",
     "empty": "Nothing yet",
     "loading": "Loading…"
@@ -46,8 +47,13 @@
     "overBudget": "Over budget",
     "byCategory": "By category",
     "byDay": "By day",
+    "byCurrency": "By currency",
+    "cumulative": "Cumulative",
     "perDay": "Avg per day",
     "forecast": "Forecast to end",
+    "transactions": "Expenses",
+    "avgCheck": "Avg expense",
+    "biggest": "Biggest",
     "noData": "Not enough data for analytics",
     "ratesMissing": "Some expenses lack a rate — refresh rates in settings"
   },

@@ -11,20 +11,32 @@ type Props = {
   value: number | null; // ts или null
   onChange: (value: number | null) => void;
   locale?: string;
+  mode?: 'date' | 'datetime';
+  /** Разрешать сброс значения в «—». По умолчанию да. */
+  clearable?: boolean;
 };
 
-export function DateField({ label, value, onChange, locale = 'ru' }: Props) {
+export function DateField({
+  label,
+  value,
+  onChange,
+  locale = 'ru',
+  mode = 'date',
+  clearable = true,
+}: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
 
+  const intlLocale = locale === 'ru' ? 'ru-RU' : 'en-US';
   const display =
     value != null
-      ? new Date(value).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+      ? new Date(value).toLocaleString(intlLocale, {
           day: 'numeric',
           month: 'short',
           year: 'numeric',
+          ...(mode === 'datetime' ? { hour: '2-digit', minute: '2-digit' } : {}),
         })
       : '—';
 
@@ -40,7 +52,7 @@ export function DateField({ label, value, onChange, locale = 'ru' }: Props) {
             {display}
           </Text>
         </Pressable>
-        {value != null ? (
+        {value != null && clearable ? (
           <Pressable
             hitSlop={8}
             onPress={() => {
@@ -56,8 +68,10 @@ export function DateField({ label, value, onChange, locale = 'ru' }: Props) {
       {open ? (
         <DateTimePicker
           value={value != null ? new Date(value) : new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          mode={mode}
+          display={
+            Platform.OS === 'ios' ? (mode === 'datetime' ? 'default' : 'inline') : 'default'
+          }
           onChange={(event, date) => {
             if (Platform.OS !== 'ios') setOpen(false);
             if (event.type === 'set' && date) onChange(date.getTime());

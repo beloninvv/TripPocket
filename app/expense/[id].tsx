@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../../src/components/Button';
 import { CategoryPicker } from '../../src/components/CategoryPicker';
 import { CurrencyPicker } from '../../src/components/CurrencyPicker';
+import { DateField } from '../../src/components/DateField';
 import { ModalHeader } from '../../src/components/ModalHeader';
 import { TextField } from '../../src/components/TextField';
 import { useActiveTrip, useCategories } from '../../src/hooks/data';
@@ -19,7 +20,7 @@ import { Colors, fontSize, spacing } from '../../src/theme';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function EditExpenseScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
@@ -32,6 +33,7 @@ export default function EditExpenseScreen() {
   const [currency, setCurrency] = useState('RUB');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [spentAt, setSpentAt] = useState<number>(Date.now());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -43,6 +45,7 @@ export default function EditExpenseScreen() {
         setCurrency(exp.currency);
         setCategoryId(exp.category_id);
         setNote(exp.note ?? '');
+        setSpentAt(exp.spent_at);
       }
       setLoaded(true);
     })();
@@ -64,6 +67,7 @@ export default function EditExpenseScreen() {
         amountBase,
         rateUsed: rate,
         note: note.trim() || null,
+        spentAt,
       });
       router.back();
     } finally {
@@ -104,6 +108,15 @@ export default function EditExpenseScreen() {
           </View>
 
           <TextField label={t('common.note')} value={note} onChangeText={setNote} />
+
+          <DateField
+            label={t('common.dateTime')}
+            mode="datetime"
+            clearable={false}
+            value={spentAt}
+            onChange={(v) => v != null && setSpentAt(v)}
+            locale={i18n.language}
+          />
 
           <Button
             title={t('common.save')}

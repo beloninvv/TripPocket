@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { BarChart, PieChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import { useTranslation } from 'react-i18next';
 
 import { ProgressBar } from '../../src/components/ProgressBar';
@@ -56,6 +56,11 @@ export default function AnalyticsScreen() {
     frontColor: colors.primary,
   }));
 
+  const lineData = stats.cumulative.map((d) => ({
+    value: Math.round(d.total),
+    label: formatDay(d.day, i18n.language),
+  }));
+
   const budgetProgress =
     stats.budget != null && stats.budget > 0 ? stats.total / stats.budget : 0;
   const budgetColor = stats.overBudget
@@ -95,6 +100,20 @@ export default function AnalyticsScreen() {
                 value={formatAmount(stats.forecastTotal, stats.base)}
               />
             ) : null}
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.statRow}>
+            <Stat label={t('analytics.transactions')} value={String(stats.count)} />
+            <Stat
+              label={t('analytics.avgCheck')}
+              value={formatAmount(stats.avgTransaction, stats.base)}
+            />
+            <Stat
+              label={t('analytics.biggest')}
+              value={formatAmount(stats.maxTransaction, stats.base)}
+            />
           </View>
 
           {stats.hasUnconverted ? (
@@ -151,6 +170,47 @@ export default function AnalyticsScreen() {
             />
           </View>
         ) : null}
+
+        {/* Накопительно */}
+        {lineData.length > 1 ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('analytics.cumulative')}</Text>
+            <LineChart
+              data={lineData}
+              areaChart
+              color={colors.primary}
+              startFillColor={colors.primary}
+              startOpacity={0.25}
+              endOpacity={0.02}
+              thickness={2}
+              noOfSections={3}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideRules
+              hideDataPoints
+              xAxisLabelTextStyle={styles.axisLabel}
+              yAxisTextStyle={styles.axisLabel}
+            />
+          </View>
+        ) : null}
+
+        {/* По валютам */}
+        {stats.byCurrency.length > 1 ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('analytics.byCurrency')}</Text>
+            {stats.byCurrency.map((c) => (
+              <View key={c.currency} style={styles.currencyRow}>
+                <Text style={styles.currencyCode}>{c.currency}</Text>
+                <Text style={styles.currencyOriginal}>
+                  {formatAmount(c.amountOriginal, c.currency)}
+                </Text>
+                <Text style={styles.currencyBase}>
+                  ≈ {formatAmount(c.amountBase, stats.base)}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
       </ScrollView>
     </Screen>
   );
@@ -204,4 +264,18 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     textAlign: 'right',
   },
   axisLabel: { color: colors.textFaint, fontSize: 10 },
+  divider: { height: 1, backgroundColor: colors.border },
+  currencyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  currencyCode: {
+    width: 52,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+  },
+  currencyOriginal: { flex: 1, fontSize: fontSize.sm, color: colors.text },
+  currencyBase: { fontSize: fontSize.sm, color: colors.textMuted },
 });
