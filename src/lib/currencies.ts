@@ -17,6 +17,7 @@ export const CURRENCIES: Currency[] = [
   { code: 'ARS', symbol: '$', name: 'Argentine Peso' },
   { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham' },
   { code: 'GEL', symbol: '₾', name: 'Georgian Lari' },
+  { code: 'AMD', symbol: '֏', name: 'Armenian Dram' },
   { code: 'KZT', symbol: '₸', name: 'Kazakhstani Tenge' },
   { code: 'INR', symbol: '₹', name: 'Indian Rupee' },
   { code: 'IDR', symbol: 'Rp', name: 'Indonesian Rupiah' },
