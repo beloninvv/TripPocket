@@ -24,8 +24,7 @@
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite",
-      "expo-sharing"
+      "expo-sqlite"
     ]
   }
 }
