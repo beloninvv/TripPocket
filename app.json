@@ -25,6 +25,19 @@
     "plugins": [
       "expo-router",
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f574f4f1-98f2-4753-b1c9-fa3a27ce2e86"
+      }
+    },
+    "owner": "vladimirbelonin",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f574f4f1-98f2-4753-b1c9-fa3a27ce2e86"
+    }
   }
 }
