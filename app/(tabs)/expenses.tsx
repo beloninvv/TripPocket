@@ -8,7 +8,7 @@ import { Screen } from '../../src/components/Screen';
 import { useActiveTrip, useCategories, useExpenses } from '../../src/hooks/data';
 import { categoryLabel } from '../../src/lib/category';
 import { formatAmount } from '../../src/lib/currencies';
-import { formatDayLabel } from '../../src/lib/date';
+import { formatDayLabel, formatTime } from '../../src/lib/date';
 import type { ExpenseWithCategory } from '../../src/repositories/expensesRepo';
 import { deleteExpense } from '../../src/repositories/expensesRepo';
 import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
@@ -99,6 +99,8 @@ export default function ExpensesScreen() {
               </Text>
               <Text style={styles.itemSub}>
                 {formatDayLabel(item.spent_at, i18n.language, t('common.today'))}
+                {' '}
+                {formatTime(item.spent_at, i18n.language)}
                 {item.note ? ` · ${item.note}` : ''}
               </Text>
             </View>

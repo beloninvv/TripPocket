@@ -24,3 +24,11 @@ export function formatDayLabel(ts: number, locale: string, todayLabel: string): 
   if (startOfDay(ts) === startOfDay(Date.now())) return todayLabel;
   return formatDay(ts, locale);
 }
+
+/** Время записи: "14:30". */
+export function formatTime(ts: number, locale: string): string {
+  return new Date(ts).toLocaleTimeString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
