@@ -169,6 +169,8 @@ export default function SettingsScreen() {
             last
           />
         </View>
+
+        <Text style={styles.footer}>TripPocket · сборка 1</Text>
       </ScrollView>
     </Screen>
   );
@@ -256,4 +258,10 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   actionRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
   actionLabel: { flex: 1, fontSize: fontSize.md, color: colors.text },
+  footer: {
+    textAlign: 'center',
+    color: colors.textFaint,
+    fontSize: fontSize.xs,
+    marginTop: spacing.md,
+  },
 });

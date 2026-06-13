@@ -33,9 +33,7 @@
       }
     },
     "owner": "vladimirbelonin",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "exposdk:54.0.0",
     "updates": {
       "url": "https://u.expo.dev/f574f4f1-98f2-4753-b1c9-fa3a27ce2e86"
     }
