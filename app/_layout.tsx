@@ -21,6 +21,7 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="trip/new" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="trip/[id]" options={{ presentation: 'modal' }} />
             <Stack.Screen name="expense/[id]" options={{ presentation: 'modal' }} />
             <Stack.Screen name="categories" options={{ presentation: 'modal' }} />
           </Stack>

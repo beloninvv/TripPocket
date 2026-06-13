@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -17,9 +17,13 @@ import { CategoryPicker } from '../../src/components/CategoryPicker';
 import { CurrencyPicker } from '../../src/components/CurrencyPicker';
 import { Screen } from '../../src/components/Screen';
 import { TextField } from '../../src/components/TextField';
-import { useActiveTrip, useCategories } from '../../src/hooks/data';
+import { useActiveTrip, useCategories, useExpenses } from '../../src/hooks/data';
+import { formatAmount } from '../../src/lib/currencies';
+import { startOfDay } from '../../src/lib/date';
 import { addExpense } from '../../src/repositories/expensesRepo';
+import { getSetting, setSetting } from '../../src/repositories/settingsRepo';
 import { convertToBase } from '../../src/services/currency';
+import { computeTripStats } from '../../src/services/analytics';
 import { colors, fontSize, fontWeight, spacing } from '../../src/theme';
 
 export default function AddExpenseScreen() {
@@ -27,6 +31,7 @@ export default function AddExpenseScreen() {
   const router = useRouter();
   const { trip } = useActiveTrip();
   const { categories } = useCategories();
+  const { expenses, reload: reloadExpenses } = useExpenses(trip?.id ?? null);
 
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
@@ -35,11 +40,31 @@ export default function AddExpenseScreen() {
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currencyTouched = useRef(false);
 
-  // По умолчанию валюта = базовая валюта поездки (пока пользователь не выбрал свою)
+  // Стартовая валюта: последняя использованная, иначе базовая валюта поездки.
   useEffect(() => {
-    if (trip) setCurrency((prev) => prev || trip.base_currency);
+    if (currencyTouched.current) return;
+    getSetting('last_currency').then((last) => {
+      if (currencyTouched.current) return;
+      setCurrency(last || trip?.base_currency || '');
+    });
   }, [trip?.base_currency]);
+
+  function pickCurrency(code: string) {
+    currencyTouched.current = true;
+    setCurrency(code);
+  }
+
+  // Сводка для «темпа трат»: остаток бюджета и сколько потрачено сегодня.
+  const stats = useMemo(
+    () => (trip ? computeTripStats(trip, expenses) : null),
+    [trip, expenses]
+  );
+  const todaySpent = useMemo(() => {
+    const today = startOfDay(Date.now());
+    return stats?.byDay.find((d) => d.day === today)?.total ?? 0;
+  }, [stats]);
 
   useEffect(() => {
     return () => {
@@ -68,6 +93,8 @@ export default function AddExpenseScreen() {
         rateUsed: rate,
         note: note.trim() || null,
       });
+      setSetting('last_currency', currency).catch(() => {});
+      reloadExpenses();
       // Сброс для следующей траты, категорию и валюту сохраняем
       setAmount('');
       setNote('');
@@ -104,7 +131,17 @@ export default function AddExpenseScreen() {
           contentContainerStyle={styles.body}
           keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.tripName}>{trip.name}</Text>
+          <View style={styles.tripRow}>
+            <Text style={styles.tripName}>{trip.name}</Text>
+            {stats ? (
+              <Text style={styles.pace}>
+                {stats.remaining != null
+                  ? `${t('analytics.remaining')}: ${formatAmount(stats.remaining, stats.base)} · `
+                  : ''}
+                {t('common.today')}: {formatAmount(todaySpent, stats.base)}
+              </Text>
+            ) : null}
+          </View>
 
           <View style={styles.amountWrap}>
             <TextInput
@@ -118,7 +155,7 @@ export default function AddExpenseScreen() {
             />
           </View>
 
-          <CurrencyPicker value={currency} onChange={setCurrency} />
+          <CurrencyPicker value={currency} onChange={pickCurrency} />
 
           <View style={styles.section}>
             <Text style={styles.label}>{t('add.pickCategory')}</Text>
@@ -167,7 +204,9 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   hint: { color: colors.textMuted, fontSize: fontSize.md, textAlign: 'center' },
   body: { padding: spacing.lg, gap: spacing.lg },
+  tripRow: { gap: 2 },
   tripName: { fontSize: fontSize.sm, color: colors.textMuted },
+  pace: { fontSize: fontSize.xs, color: colors.textFaint },
   amountWrap: { alignItems: 'center', paddingVertical: spacing.md },
   amountInput: {
     fontSize: fontSize.xxl,

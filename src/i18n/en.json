@@ -71,6 +71,10 @@
     "baseCurrency": "Base currency",
     "categories": "Categories",
     "export": "Export data",
+    "import": "Import from backup",
+    "importConfirm": "Importing will REPLACE all current data with the file's data. Continue?",
+    "imported": "Imported: {{trips}} trips, {{expenses}} expenses",
+    "importInvalid": "Could not read the backup file",
     "refreshRates": "Refresh exchange rates",
     "ratesUpdated": "Rates updated",
     "about": "About"

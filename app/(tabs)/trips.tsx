@@ -1,13 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { Screen } from '../../src/components/Screen';
 import { useActiveTrip, useTrips } from '../../src/hooks/data';
 import { formatAmount } from '../../src/lib/currencies';
-import type { TripRow } from '../../src/db/types';
-import { deleteTrip, setActiveTrip } from '../../src/repositories/tripsRepo';
+import { setActiveTrip } from '../../src/repositories/tripsRepo';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
 
 export default function TripsScreen() {
@@ -19,20 +18,6 @@ export default function TripsScreen() {
   async function makeActive(id: string) {
     await setActiveTrip(id);
     await Promise.all([reload(), reloadActive()]);
-  }
-
-  function confirmDelete(trip: TripRow) {
-    Alert.alert(trip.name, t('trips.deleteConfirm'), [
-      { text: t('common.cancel'), style: 'cancel' },
-      {
-        text: t('common.delete'),
-        style: 'destructive',
-        onPress: async () => {
-          await deleteTrip(trip.id);
-          await Promise.all([reload(), reloadActive()]);
-        },
-      },
-    ]);
   }
 
   return (
@@ -48,15 +33,20 @@ export default function TripsScreen() {
             <Pressable
               style={[styles.card, isActive && styles.cardActive]}
               onPress={() => makeActive(item.id)}
-              onLongPress={() => confirmDelete(item)}
+              onLongPress={() => router.push(`/trip/${item.id}`)}
             >
               <View style={styles.cardTop}>
                 <Text style={styles.name}>{item.name}</Text>
-                {isActive ? (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{t('trips.active')}</Text>
-                  </View>
-                ) : null}
+                <View style={styles.cardTopRight}>
+                  {isActive ? (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{t('trips.active')}</Text>
+                    </View>
+                  ) : null}
+                  <Pressable hitSlop={10} onPress={() => router.push(`/trip/${item.id}`)}>
+                    <Ionicons name="create-outline" size={20} color={colors.textMuted} />
+                  </Pressable>
+                </View>
               </View>
               <View style={styles.cardMeta}>
                 <Text style={styles.meta}>{item.base_currency}</Text>
@@ -102,6 +92,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  cardTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   name: {
     fontSize: fontSize.lg,

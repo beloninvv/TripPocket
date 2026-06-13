@@ -8,7 +8,7 @@ import { CurrencyPicker } from '../../src/components/CurrencyPicker';
 import { Screen } from '../../src/components/Screen';
 import { LANGUAGES, Language, setLanguage } from '../../src/i18n';
 import { getSetting, setSetting } from '../../src/repositories/settingsRepo';
-import { exportCsv, exportJson } from '../../src/services/export';
+import { exportCsv, exportJson, importJson } from '../../src/services/export';
 import { fetchAndCacheRates } from '../../src/services/currency';
 import { colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
 
@@ -56,6 +56,41 @@ export default function SettingsScreen() {
     } finally {
       setBusy(null);
     }
+  }
+
+  function runImport() {
+    Alert.alert('', t('settings.importConfirm'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('common.done'),
+        style: 'destructive',
+        onPress: async () => {
+          setBusy('import');
+          try {
+            const result = await importJson();
+            if (!result) return; // отменено
+            // Применяем язык и базовую валюту из восстановленных настроек
+            const [restoredLang, restoredBase] = await Promise.all([
+              getSetting('language'),
+              getSetting('base_currency'),
+            ]);
+            if (restoredLang && LANGUAGES.includes(restoredLang as Language)) {
+              setLanguage(restoredLang as Language);
+              setLang(restoredLang as Language);
+            }
+            if (restoredBase) setBaseCurrency(restoredBase);
+            Alert.alert(
+              '',
+              t('settings.imported', { trips: result.trips, expenses: result.expenses })
+            );
+          } catch {
+            Alert.alert('', t('settings.importInvalid'));
+          } finally {
+            setBusy(null);
+          }
+        },
+      },
+    ]);
   }
 
   return (
@@ -106,6 +141,12 @@ export default function SettingsScreen() {
             label={`${t('settings.export')} (JSON)`}
             loading={busy === 'json'}
             onPress={() => runExport('json')}
+          />
+          <ActionRow
+            icon="cloud-upload-outline"
+            label={t('settings.import')}
+            loading={busy === 'import'}
+            onPress={runImport}
             last
           />
         </View>

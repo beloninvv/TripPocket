@@ -1,0 +1,85 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useTranslation } from 'react-i18next';
+
+import { colors, fontSize, radius, spacing } from '../theme';
+
+type Props = {
+  label: string;
+  value: number | null; // ts или null
+  onChange: (value: number | null) => void;
+  locale?: string;
+};
+
+export function DateField({ label, value, onChange, locale = 'ru' }: Props) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+
+  const display =
+    value != null
+      ? new Date(value).toLocaleDateString(locale === 'ru' ? 'ru-RU' : 'en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })
+      : '—';
+
+  return (
+    <View style={styles.wrap}>
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.row}>
+        <Pressable
+          style={styles.value}
+          onPress={() => setOpen((v) => !v)}
+        >
+          <Text style={[styles.valueText, value == null && styles.placeholder]}>
+            {display}
+          </Text>
+        </Pressable>
+        {value != null ? (
+          <Pressable
+            hitSlop={8}
+            onPress={() => {
+              onChange(null);
+              setOpen(false);
+            }}
+          >
+            <Text style={styles.clear}>{t('common.cancel')}</Text>
+          </Pressable>
+        ) : null}
+      </View>
+
+      {open ? (
+        <DateTimePicker
+          value={value != null ? new Date(value) : new Date()}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'inline' : 'default'}
+          onChange={(event, date) => {
+            if (Platform.OS !== 'ios') setOpen(false);
+            if (event.type === 'set' && date) onChange(date.getTime());
+          }}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrap: { gap: spacing.xs },
+  label: { fontSize: fontSize.sm, color: colors.textMuted },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  value: {
+    flex: 1,
+    height: 50,
+    justifyContent: 'center',
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+  },
+  valueText: { fontSize: fontSize.md, color: colors.text },
+  placeholder: { color: colors.textFaint },
+  clear: { fontSize: fontSize.sm, color: colors.danger },
+});

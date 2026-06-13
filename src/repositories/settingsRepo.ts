@@ -2,7 +2,12 @@ import { getDb } from '../db';
 import type { SettingRow } from '../db/types';
 
 /** Известные ключи настроек. */
-export type SettingKey = 'language' | 'base_currency' | 'active_trip_id';
+export type SettingKey =
+  | 'language'
+  | 'base_currency'
+  | 'active_trip_id'
+  | 'last_currency'
+  | 'theme';
 
 export async function getSetting(key: SettingKey): Promise<string | null> {
   const row = await getDb().getFirstAsync<SettingRow>(

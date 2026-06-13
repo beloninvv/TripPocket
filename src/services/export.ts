@@ -1,3 +1,4 @@
+import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
@@ -98,4 +99,70 @@ export async function exportJson(): Promise<void> {
   const content = await buildJson();
   const stamp = new Date().toISOString().slice(0, 10);
   await writeAndShare(`trippocket-backup-${stamp}.json`, content, 'application/json');
+}
+
+export type ImportResult = { trips: number; expenses: number };
+
+/**
+ * Восстанавливает данные из JSON-бэкапа (созданного exportJson).
+ * Полностью заменяет текущие поездки, траты, категории и настройки.
+ * Возвращает null, если пользователь отменил выбор файла.
+ */
+export async function importJson(): Promise<ImportResult | null> {
+  const picked = await DocumentPicker.getDocumentAsync({
+    type: 'application/json',
+    copyToCacheDirectory: true,
+  });
+  if (picked.canceled || !picked.assets?.[0]) return null;
+
+  const content = await new File(picked.assets[0].uri).text();
+  const data = JSON.parse(content) as {
+    trips?: TripRow[];
+    expenses?: ExpenseRow[];
+    categories?: CategoryRow[];
+    settings?: SettingRow[];
+  };
+
+  const trips = data.trips;
+  const expenses = data.expenses;
+  if (!Array.isArray(trips) || !Array.isArray(expenses)) {
+    throw new Error('Invalid backup file');
+  }
+  const categories = data.categories ?? [];
+  const settings = data.settings ?? [];
+
+  const db = getDb();
+  await db.withTransactionAsync(async () => {
+    await db.execAsync(
+      'DELETE FROM expenses; DELETE FROM trips; DELETE FROM categories; DELETE FROM settings;'
+    );
+
+    for (const c of categories) {
+      await db.runAsync(
+        `INSERT INTO categories (id, user_id, name, icon, is_default, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [c.id, c.user_id, c.name, c.icon, c.is_default, c.sort_order]
+      );
+    }
+    for (const tr of trips) {
+      await db.runAsync(
+        `INSERT INTO trips (id, user_id, name, base_currency, budget, start_date, end_date, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [tr.id, tr.user_id, tr.name, tr.base_currency, tr.budget, tr.start_date, tr.end_date, tr.created_at]
+      );
+    }
+    for (const e of expenses) {
+      await db.runAsync(
+        `INSERT INTO expenses
+           (id, trip_id, user_id, amount, currency, amount_base, rate_used, category_id, note, spent_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [e.id, e.trip_id, e.user_id, e.amount, e.currency, e.amount_base, e.rate_used, e.category_id, e.note, e.spent_at, e.created_at]
+      );
+    }
+    for (const s of settings) {
+      await db.runAsync('INSERT INTO settings (key, value) VALUES (?, ?)', [s.key, s.value]);
+    }
+  });
+
+  return { trips: trips.length, expenses: expenses.length };
 }
