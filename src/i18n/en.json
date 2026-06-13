@@ -1,0 +1,88 @@
+{
+  "tabs": {
+    "add": "Add",
+    "expenses": "Expenses",
+    "analytics": "Analytics",
+    "trips": "Trips",
+    "settings": "Settings"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "done": "Done",
+    "create": "Create",
+    "today": "Today",
+    "note": "Note",
+    "amount": "Amount",
+    "currency": "Currency",
+    "category": "Category",
+    "date": "Date",
+    "all": "All",
+    "empty": "Nothing yet",
+    "loading": "Loading…"
+  },
+  "add": {
+    "title": "New expense",
+    "amountPlaceholder": "0",
+    "notePlaceholder": "What did you buy?",
+    "pickCategory": "Pick a category",
+    "saved": "Expense saved",
+    "noActiveTrip": "Create a trip first",
+    "createTrip": "Create trip"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "empty": "No expenses yet — add your first",
+    "deleteConfirm": "Delete this expense?"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "spent": "Spent",
+    "budget": "Budget",
+    "remaining": "Remaining",
+    "overBudget": "Over budget",
+    "byCategory": "By category",
+    "byDay": "By day",
+    "perDay": "Avg per day",
+    "forecast": "Forecast to end",
+    "noData": "Not enough data for analytics",
+    "ratesMissing": "Some expenses lack a rate — refresh rates in settings"
+  },
+  "trips": {
+    "title": "Trips",
+    "empty": "No trips — create your first",
+    "new": "New trip",
+    "name": "Name",
+    "namePlaceholder": "e.g. Argentina 2026",
+    "baseCurrency": "Base currency",
+    "budget": "Budget",
+    "startDate": "Start",
+    "endDate": "End",
+    "active": "Active",
+    "makeActive": "Make active",
+    "deleteConfirm": "Delete trip and all its expenses?"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "baseCurrency": "Base currency",
+    "categories": "Categories",
+    "export": "Export data",
+    "refreshRates": "Refresh exchange rates",
+    "ratesUpdated": "Rates updated",
+    "about": "About"
+  },
+  "categories": {
+    "food": "Food",
+    "transport": "Transport",
+    "lodging": "Lodging",
+    "entertainment": "Entertainment",
+    "shopping": "Shopping",
+    "communication": "Communication",
+    "health": "Health",
+    "other": "Other"
+  }
+}

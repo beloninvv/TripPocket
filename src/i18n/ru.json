@@ -1,0 +1,88 @@
+{
+  "tabs": {
+    "add": "Добавить",
+    "expenses": "Траты",
+    "analytics": "Аналитика",
+    "trips": "Поездки",
+    "settings": "Настройки"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "delete": "Удалить",
+    "edit": "Изменить",
+    "add": "Добавить",
+    "done": "Готово",
+    "create": "Создать",
+    "today": "Сегодня",
+    "note": "Комментарий",
+    "amount": "Сумма",
+    "currency": "Валюта",
+    "category": "Категория",
+    "date": "Дата",
+    "all": "Все",
+    "empty": "Пока пусто",
+    "loading": "Загрузка…"
+  },
+  "add": {
+    "title": "Новая трата",
+    "amountPlaceholder": "0",
+    "notePlaceholder": "На что потратил?",
+    "pickCategory": "Выбери категорию",
+    "saved": "Трата записана",
+    "noActiveTrip": "Сначала создай поездку",
+    "createTrip": "Создать поездку"
+  },
+  "expenses": {
+    "title": "Траты",
+    "empty": "Трат пока нет — добавь первую",
+    "deleteConfirm": "Удалить эту трату?"
+  },
+  "analytics": {
+    "title": "Аналитика",
+    "spent": "Потрачено",
+    "budget": "Бюджет",
+    "remaining": "Остаток",
+    "overBudget": "Превышение",
+    "byCategory": "По категориям",
+    "byDay": "По дням",
+    "perDay": "Среднее в день",
+    "forecast": "Прогноз до конца",
+    "noData": "Недостаточно данных для аналитики",
+    "ratesMissing": "Часть трат без курса — обнови курсы валют в настройках"
+  },
+  "trips": {
+    "title": "Поездки",
+    "empty": "Поездок нет — создай первую",
+    "new": "Новая поездка",
+    "name": "Название",
+    "namePlaceholder": "Например, Аргентина 2026",
+    "baseCurrency": "Базовая валюта",
+    "budget": "Бюджет",
+    "startDate": "Начало",
+    "endDate": "Конец",
+    "active": "Активная",
+    "makeActive": "Сделать активной",
+    "deleteConfirm": "Удалить поездку и все её траты?"
+  },
+  "settings": {
+    "title": "Настройки",
+    "language": "Язык",
+    "baseCurrency": "Базовая валюта",
+    "categories": "Категории",
+    "export": "Экспорт данных",
+    "refreshRates": "Обновить курсы валют",
+    "ratesUpdated": "Курсы обновлены",
+    "about": "О приложении"
+  },
+  "categories": {
+    "food": "Еда",
+    "transport": "Транспорт",
+    "lodging": "Жильё",
+    "entertainment": "Развлечения",
+    "shopping": "Покупки",
+    "communication": "Связь",
+    "health": "Здоровье",
+    "other": "Прочее"
+  }
+}
