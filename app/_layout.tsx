@@ -23,6 +23,8 @@ function ThemedApp() {
         <Stack.Screen name="trip/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="expense/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="categories" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="templates" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="converter" options={{ presentation: 'modal' }} />
       </Stack>
     </>
   );

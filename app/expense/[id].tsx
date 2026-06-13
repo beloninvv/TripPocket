@@ -15,6 +15,7 @@ import {
   getExpense,
   updateExpense,
 } from '../../src/repositories/expensesRepo';
+import { evalExpression } from '../../src/lib/calc';
 import { convertToBase } from '../../src/services/currency';
 import { Colors, fontSize, spacing } from '../../src/theme';
 import { useTheme } from '../../src/theme/ThemeProvider';
@@ -51,7 +52,8 @@ export default function EditExpenseScreen() {
     })();
   }, [id]);
 
-  const amountValue = parseAmount(amount);
+  const computed = evalExpression(amount);
+  const amountValue = computed != null && computed > 0 ? computed : null;
   const canSave = !!id && amountValue != null && !!categoryId && !saving;
 
   async function onSave() {
@@ -130,13 +132,6 @@ export default function EditExpenseScreen() {
       )}
     </View>
   );
-}
-
-function parseAmount(raw: string): number | null {
-  const normalized = raw.replace(',', '.').trim();
-  if (!normalized) return null;
-  const n = Number(normalized);
-  return Number.isFinite(n) && n > 0 ? n : null;
 }
 
 const makeStyles = (colors: Colors) => StyleSheet.create({

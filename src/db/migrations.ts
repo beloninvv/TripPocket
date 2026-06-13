@@ -111,6 +111,24 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 2,
+    up: async (db) => {
+      // Шаблоны частых трат — заполняют форму добавления в один тап
+      await db.execAsync(`
+        CREATE TABLE templates (
+          id          TEXT PRIMARY KEY,
+          user_id     TEXT NOT NULL,
+          name        TEXT NOT NULL,
+          amount      REAL,
+          currency    TEXT,
+          category_id TEXT NOT NULL,
+          note        TEXT,
+          sort_order  INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+    },
+  },
 ];
 
 /** Текущая целевая версия схемы. */

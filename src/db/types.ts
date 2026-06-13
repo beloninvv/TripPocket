@@ -50,3 +50,14 @@ export type SettingRow = {
   key: string;
   value: string;
 };
+
+export type TemplateRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  amount: number | null;
+  currency: string | null;
+  category_id: string;
+  note: string | null;
+  sort_order: number;
+};

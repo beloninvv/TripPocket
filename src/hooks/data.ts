@@ -3,8 +3,9 @@ import { useFocusEffect } from 'expo-router';
 
 import { listCategories } from '../repositories/categoriesRepo';
 import { listExpenses, ExpenseWithCategory } from '../repositories/expensesRepo';
+import { listTemplates } from '../repositories/templatesRepo';
 import { getActiveTrip, listTrips } from '../repositories/tripsRepo';
-import type { CategoryRow, TripRow } from '../db/types';
+import type { CategoryRow, TemplateRow, TripRow } from '../db/types';
 
 /** Перезагружает данные каждый раз, когда экран получает фокус. */
 function useFocusLoader<T>(loader: () => Promise<T>, initial: T) {
@@ -42,6 +43,11 @@ export function useTrips() {
 export function useCategories() {
   const { data, loading, reload } = useFocusLoader<CategoryRow[]>(listCategories, []);
   return { categories: data, loading, reload };
+}
+
+export function useTemplates() {
+  const { data, loading, reload } = useFocusLoader<TemplateRow[]>(listTemplates, []);
+  return { templates: data, loading, reload };
 }
 
 export function useExpenses(

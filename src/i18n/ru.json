@@ -15,6 +15,7 @@
     "done": "Готово",
     "create": "Создать",
     "today": "Сегодня",
+    "now": "Сейчас",
     "note": "Комментарий",
     "amount": "Сумма",
     "currency": "Валюта",
@@ -37,6 +38,7 @@
   "expenses": {
     "title": "Траты",
     "empty": "Трат пока нет — добавь первую",
+    "search": "Поиск по тратам",
     "deleteConfirm": "Удалить эту трату?"
   },
   "analytics": {
@@ -48,7 +50,9 @@
     "byCategory": "По категориям",
     "byDay": "По дням",
     "byCurrency": "По валютам",
+    "byWeekday": "По дням недели",
     "cumulative": "Накопительно",
+    "budgetDaysLeft": "Хватит на {{days}} дн. при текущем темпе",
     "perDay": "Среднее в день",
     "forecast": "Прогноз до конца",
     "transactions": "Трат",
@@ -87,7 +91,22 @@
     "importInvalid": "Не удалось прочитать файл бэкапа",
     "refreshRates": "Обновить курсы валют",
     "ratesUpdated": "Курсы обновлены",
+    "ratesUpdatedAt": "обновлено",
     "about": "О приложении"
+  },
+  "templates": {
+    "title": "Шаблоны",
+    "name": "Название",
+    "namePlaceholder": "Например, Кофе",
+    "optional": "необязательно",
+    "saved": "Сохранённые",
+    "manage": "Шаблоны трат",
+    "pick": "Шаблоны"
+  },
+  "converter": {
+    "title": "Калькулятор валют",
+    "from": "Из",
+    "result": "Итог"
   },
   "categories": {
     "food": "Еда",

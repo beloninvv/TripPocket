@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -15,31 +16,36 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '../../src/components/Button';
 import { CategoryPicker } from '../../src/components/CategoryPicker';
 import { CurrencyPicker } from '../../src/components/CurrencyPicker';
+import { DateField } from '../../src/components/DateField';
 import { Screen } from '../../src/components/Screen';
 import { TextField } from '../../src/components/TextField';
-import { useActiveTrip, useCategories, useExpenses } from '../../src/hooks/data';
+import { useActiveTrip, useCategories, useExpenses, useTemplates } from '../../src/hooks/data';
+import type { TemplateRow } from '../../src/db/types';
+import { evalExpression, looksLikeExpression } from '../../src/lib/calc';
 import { formatAmount } from '../../src/lib/currencies';
 import { startOfDay } from '../../src/lib/date';
 import { addExpense } from '../../src/repositories/expensesRepo';
 import { getSetting, setSetting } from '../../src/repositories/settingsRepo';
 import { convertToBase } from '../../src/services/currency';
 import { computeTripStats } from '../../src/services/analytics';
-import { Colors, fontSize, fontWeight, spacing } from '../../src/theme';
+import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
 export default function AddExpenseScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { trip } = useActiveTrip();
   const { categories } = useCategories();
+  const { templates } = useTemplates();
   const { expenses, reload: reloadExpenses } = useExpenses(trip?.id ?? null);
 
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState('');
+  const [spentAt, setSpentAt] = useState<number | null>(null); // null = «Сейчас»
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -59,6 +65,16 @@ export default function AddExpenseScreen() {
     setCurrency(code);
   }
 
+  function applyTemplate(tpl: TemplateRow) {
+    if (tpl.amount != null) setAmount(String(tpl.amount));
+    if (tpl.currency) {
+      currencyTouched.current = true;
+      setCurrency(tpl.currency);
+    }
+    setCategoryId(tpl.category_id);
+    if (tpl.note) setNote(tpl.note);
+  }
+
   // Сводка для «темпа трат»: остаток бюджета и сколько потрачено сегодня.
   const stats = useMemo(
     () => (trip ? computeTripStats(trip, expenses) : null),
@@ -75,7 +91,9 @@ export default function AddExpenseScreen() {
     };
   }, []);
 
-  const amountValue = parseAmount(amount);
+  const computed = evalExpression(amount);
+  const amountValue = computed != null && computed > 0 ? computed : null;
+  const showPreview = looksLikeExpression(amount) && amountValue != null;
   const canSave = !!trip && amountValue != null && !!categoryId && !saving;
 
   async function onSave() {
@@ -95,12 +113,14 @@ export default function AddExpenseScreen() {
         amountBase,
         rateUsed: rate,
         note: note.trim() || null,
+        spentAt: spentAt ?? undefined,
       });
       setSetting('last_currency', currency).catch(() => {});
       reloadExpenses();
       // Сброс для следующей траты, категорию и валюту сохраняем
       setAmount('');
       setNote('');
+      setSpentAt(null);
       setSavedFlash(true);
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setSavedFlash(false), 1800);
@@ -146,16 +166,59 @@ export default function AddExpenseScreen() {
             ) : null}
           </View>
 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tplRow}
+            keyboardShouldPersistTaps="handled"
+          >
+            {templates.map((tpl) => (
+              <Pressable key={tpl.id} style={styles.tplChip} onPress={() => applyTemplate(tpl)}>
+                <Text style={styles.tplText}>{tpl.name}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              style={[styles.tplChip, styles.tplManage]}
+              onPress={() => router.push('/templates')}
+            >
+              <Ionicons name="add" size={16} color={colors.primary} />
+              <Text style={[styles.tplText, { color: colors.primary }]}>
+                {t('templates.pick')}
+              </Text>
+            </Pressable>
+          </ScrollView>
+
           <View style={styles.amountWrap}>
             <TextInput
               value={amount}
               onChangeText={setAmount}
               placeholder={t('add.amountPlaceholder')}
               placeholderTextColor={colors.textFaint}
-              keyboardType="decimal-pad"
+              keyboardType="numbers-and-punctuation"
               style={styles.amountInput}
               autoFocus
             />
+            {showPreview ? (
+              <Text style={styles.preview}>= {formatAmount(amountValue!, currency)}</Text>
+            ) : null}
+          </View>
+
+          <View style={styles.opsRow}>
+            {(['+', '-', '*', '/'] as const).map((op) => (
+              <Pressable
+                key={op}
+                style={styles.opBtn}
+                onPress={() => setAmount((a) => a + op)}
+              >
+                <Text style={styles.opText}>{OP_LABELS[op]}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              style={styles.opBtn}
+              onPress={() => setAmount((a) => a.slice(0, -1))}
+            >
+              <Text style={styles.opText}>⌫</Text>
+            </Pressable>
           </View>
 
           <CurrencyPicker value={currency} onChange={pickCurrency} />
@@ -174,6 +237,15 @@ export default function AddExpenseScreen() {
             placeholder={t('add.notePlaceholder')}
             value={note}
             onChangeText={setNote}
+          />
+
+          <DateField
+            label={t('common.dateTime')}
+            mode="datetime"
+            value={spentAt}
+            onChange={setSpentAt}
+            nullLabel={t('common.now')}
+            locale={i18n.language}
           />
 
           <Button
@@ -195,12 +267,7 @@ export default function AddExpenseScreen() {
   );
 }
 
-function parseAmount(raw: string): number | null {
-  const normalized = raw.replace(',', '.').trim();
-  if (!normalized) return null;
-  const n = Number(normalized);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
+const OP_LABELS: Record<string, string> = { '+': '+', '-': '−', '*': '×', '/': '÷' };
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
   flex: { flex: 1 },
@@ -218,6 +285,33 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     textAlign: 'center',
     minWidth: 160,
   },
+  preview: { marginTop: spacing.xs, fontSize: fontSize.md, color: colors.textMuted },
+  tplRow: { gap: spacing.sm, paddingVertical: spacing.xs },
+  tplChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tplManage: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  tplText: { fontSize: fontSize.sm, color: colors.text, fontWeight: fontWeight.medium },
+  opsRow: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
+  opBtn: {
+    width: 52,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  opText: { fontSize: fontSize.lg, color: colors.text },
   section: { gap: spacing.sm },
   label: { fontSize: fontSize.sm, color: colors.textMuted },
   saved: {

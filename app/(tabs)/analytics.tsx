@@ -61,6 +61,16 @@ export default function AnalyticsScreen() {
     label: formatDay(d.day, i18n.language),
   }));
 
+  const weekdayLabels =
+    i18n.language === 'ru'
+      ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekdayData = stats.byWeekday.map((v, i) => ({
+    value: Math.round(v),
+    label: weekdayLabels[i],
+    frontColor: colors.primary,
+  }));
+
   const budgetProgress =
     stats.budget != null && stats.budget > 0 ? stats.total / stats.budget : 0;
   const budgetColor = stats.overBudget
@@ -90,6 +100,12 @@ export default function AnalyticsScreen() {
                 </Text>
               </View>
             </View>
+          ) : null}
+
+          {stats.budgetDaysLeft != null ? (
+            <Text style={styles.paceLine}>
+              ⏳ {t('analytics.budgetDaysLeft', { days: stats.budgetDaysLeft })}
+            </Text>
           ) : null}
 
           <View style={styles.statRow}>
@@ -194,6 +210,25 @@ export default function AnalyticsScreen() {
           </View>
         ) : null}
 
+        {/* По дням недели */}
+        {stats.count > 1 ? (
+          <View style={styles.card}>
+            <Text style={styles.sectionTitle}>{t('analytics.byWeekday')}</Text>
+            <BarChart
+              data={weekdayData}
+              barWidth={20}
+              spacing={14}
+              frontColor={colors.primary}
+              noOfSections={3}
+              yAxisThickness={0}
+              xAxisThickness={0}
+              hideRules
+              xAxisLabelTextStyle={styles.axisLabel}
+              yAxisTextStyle={styles.axisLabel}
+            />
+          </View>
+        ) : null}
+
         {/* По валютам */}
         {stats.byCurrency.length > 1 ? (
           <View style={styles.card}>
@@ -265,6 +300,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   },
   axisLabel: { color: colors.textFaint, fontSize: 10 },
   divider: { height: 1, backgroundColor: colors.border },
+  paceLine: { fontSize: fontSize.sm, color: colors.warning },
   currencyRow: {
     flexDirection: 'row',
     alignItems: 'center',

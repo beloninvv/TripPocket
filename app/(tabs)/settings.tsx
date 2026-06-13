@@ -8,8 +8,10 @@ import { CurrencyPicker } from '../../src/components/CurrencyPicker';
 import { Screen } from '../../src/components/Screen';
 import { LANGUAGES, Language, setLanguage } from '../../src/i18n';
 import { getSetting, setSetting } from '../../src/repositories/settingsRepo';
+import { lastRatesUpdate } from '../../src/repositories/ratesRepo';
 import { exportCsv, exportJson, importJson } from '../../src/services/export';
 import { fetchAndCacheRates } from '../../src/services/currency';
+import { formatDay } from '../../src/lib/date';
 import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
 import { ThemeMode, useTheme } from '../../src/theme/ThemeProvider';
 
@@ -24,11 +26,16 @@ export default function SettingsScreen() {
 
   const [lang, setLang] = useState<Language>(i18n.language as Language);
   const [baseCurrency, setBaseCurrency] = useState('RUB');
+  const [lastUpdate, setLastUpdate] = useState<number | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   useEffect(() => {
     getSetting('base_currency').then((c) => c && setBaseCurrency(c));
   }, []);
+
+  useEffect(() => {
+    lastRatesUpdate(baseCurrency).then(setLastUpdate);
+  }, [baseCurrency]);
 
   function changeLang(next: Language) {
     setLanguage(next);
@@ -45,6 +52,7 @@ export default function SettingsScreen() {
     setBusy('rates');
     try {
       const ok = await fetchAndCacheRates(baseCurrency);
+      if (ok) setLastUpdate(await lastRatesUpdate(baseCurrency));
       Alert.alert('', ok ? t('settings.ratesUpdated') : t('analytics.ratesMissing'));
     } finally {
       setBusy(null);
@@ -144,8 +152,23 @@ export default function SettingsScreen() {
             onPress={() => router.push('/categories')}
           />
           <ActionRow
+            icon="bookmark-outline"
+            label={t('templates.manage')}
+            onPress={() => router.push('/templates')}
+          />
+          <ActionRow
+            icon="calculator-outline"
+            label={t('converter.title')}
+            onPress={() => router.push('/converter')}
+          />
+          <ActionRow
             icon="refresh-outline"
             label={t('settings.refreshRates')}
+            subtitle={
+              lastUpdate
+                ? `${t('settings.ratesUpdatedAt')}: ${formatDay(lastUpdate, i18n.language)}`
+                : undefined
+            }
             loading={busy === 'rates'}
             onPress={refreshRates}
           />
@@ -170,7 +193,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.footer}>TripPocket · сборка 3</Text>
+        <Text style={styles.footer}>TripPocket · сборка 4</Text>
       </ScrollView>
     </Screen>
   );
@@ -197,12 +220,14 @@ function Chip({
 function ActionRow({
   icon,
   label,
+  subtitle,
   onPress,
   loading,
   last,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  subtitle?: string;
   onPress: () => void;
   loading?: boolean;
   last?: boolean;
@@ -216,7 +241,10 @@ function ActionRow({
       style={[styles.actionRow, !last && styles.actionRowBorder]}
     >
       <Ionicons name={icon} size={20} color={colors.textMuted} />
-      <Text style={styles.actionLabel}>{label}</Text>
+      <View style={styles.actionTextWrap}>
+        <Text style={styles.actionLabel}>{label}</Text>
+        {subtitle ? <Text style={styles.actionSub}>{subtitle}</Text> : null}
+      </View>
       <Ionicons
         name={loading ? 'hourglass-outline' : 'chevron-forward'}
         size={18}
@@ -257,7 +285,9 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     paddingVertical: spacing.md,
   },
   actionRowBorder: { borderBottomWidth: 1, borderBottomColor: colors.border },
-  actionLabel: { flex: 1, fontSize: fontSize.md, color: colors.text },
+  actionTextWrap: { flex: 1 },
+  actionLabel: { fontSize: fontSize.md, color: colors.text },
+  actionSub: { fontSize: fontSize.xs, color: colors.textFaint, marginTop: 1 },
   footer: {
     textAlign: 'center',
     color: colors.textFaint,

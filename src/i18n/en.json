@@ -15,6 +15,7 @@
     "done": "Done",
     "create": "Create",
     "today": "Today",
+    "now": "Now",
     "note": "Note",
     "amount": "Amount",
     "currency": "Currency",
@@ -37,6 +38,7 @@
   "expenses": {
     "title": "Expenses",
     "empty": "No expenses yet — add your first",
+    "search": "Search expenses",
     "deleteConfirm": "Delete this expense?"
   },
   "analytics": {
@@ -48,7 +50,9 @@
     "byCategory": "By category",
     "byDay": "By day",
     "byCurrency": "By currency",
+    "byWeekday": "By weekday",
     "cumulative": "Cumulative",
+    "budgetDaysLeft": "Lasts {{days}} days at current pace",
     "perDay": "Avg per day",
     "forecast": "Forecast to end",
     "transactions": "Expenses",
@@ -87,7 +91,22 @@
     "importInvalid": "Could not read the backup file",
     "refreshRates": "Refresh exchange rates",
     "ratesUpdated": "Rates updated",
+    "ratesUpdatedAt": "updated",
     "about": "About"
+  },
+  "templates": {
+    "title": "Templates",
+    "name": "Name",
+    "namePlaceholder": "e.g. Coffee",
+    "optional": "optional",
+    "saved": "Saved",
+    "manage": "Expense templates",
+    "pick": "Templates"
+  },
+  "converter": {
+    "title": "Currency converter",
+    "from": "From",
+    "result": "Result"
   },
   "categories": {
     "food": "Food",

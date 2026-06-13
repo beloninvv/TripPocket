@@ -12,8 +12,10 @@ type Props = {
   onChange: (value: number | null) => void;
   locale?: string;
   mode?: 'date' | 'datetime';
-  /** Разрешать сброс значения в «—». По умолчанию да. */
+  /** Разрешать сброс значения. По умолчанию да. */
   clearable?: boolean;
+  /** Что показывать при пустом значении (по умолчанию «—»). */
+  nullLabel?: string;
 };
 
 export function DateField({
@@ -23,6 +25,7 @@ export function DateField({
   locale = 'ru',
   mode = 'date',
   clearable = true,
+  nullLabel = '—',
 }: Props) {
   const { t } = useTranslation();
   const { colors } = useTheme();
@@ -38,7 +41,7 @@ export function DateField({
           year: 'numeric',
           ...(mode === 'datetime' ? { hour: '2-digit', minute: '2-digit' } : {}),
         })
-      : '—';
+      : nullLabel;
 
   return (
     <View style={styles.wrap}>

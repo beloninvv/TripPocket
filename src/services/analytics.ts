@@ -32,10 +32,12 @@ export type TripStats = {
   byCategory: CategoryStat[];
   byDay: DayStat[];
   byCurrency: CurrencyStat[];
+  byWeekday: number[]; // 7 элементов, [0]=Пн … [6]=Вс (в базовой валюте)
   cumulative: DayStat[]; // накопительный итог по дням
   avgPerDay: number;
   days: number;
   forecastTotal: number | null; // прогноз итога к end_date (если задан)
+  budgetDaysLeft: number | null; // на сколько дней хватит остатка при текущем темпе
   avgTransaction: number; // средний чек (в базовой)
   maxTransaction: number; // самая большая трата (в базовой)
   hasUnconverted: boolean; // часть трат без курса (офлайн)
@@ -63,6 +65,7 @@ export function computeTripStats(
   const catMap = new Map<string, CategoryStat>();
   const dayMap = new Map<number, number>();
   const curMap = new Map<string, CurrencyStat>();
+  const byWeekday = new Array<number>(7).fill(0);
 
   for (const exp of expenses) {
     const value = baseAmount(exp, base);
@@ -104,6 +107,10 @@ export function computeTripStats(
 
     const day = startOfDay(exp.spent_at);
     dayMap.set(day, (dayMap.get(day) ?? 0) + value);
+
+    // Пн-первый: getDay() 0=Вс → (d+6)%7 даёт 0=Пн … 6=Вс
+    const wd = (new Date(exp.spent_at).getDay() + 6) % 7;
+    byWeekday[wd] += value;
   }
 
   const byCategory = [...catMap.values()]
@@ -141,6 +148,11 @@ export function computeTripStats(
   const remaining = budget != null ? budget - total : null;
   const overBudget = remaining != null && remaining < 0;
 
+  const budgetDaysLeft =
+    remaining != null && remaining > 0 && avgPerDay > 0
+      ? Math.floor(remaining / avgPerDay)
+      : null;
+
   return {
     base,
     total,
@@ -150,10 +162,12 @@ export function computeTripStats(
     byCategory,
     byDay,
     byCurrency,
+    byWeekday,
     cumulative,
     avgPerDay,
     days,
     forecastTotal,
+    budgetDaysLeft,
     avgTransaction,
     maxTransaction,
     hasUnconverted,

@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 
 import { Screen } from '../../src/components/Screen';
+import { TextField } from '../../src/components/TextField';
 import { useActiveTrip, useCategories, useExpenses } from '../../src/hooks/data';
 import { categoryLabel } from '../../src/lib/category';
 import { formatAmount } from '../../src/lib/currencies';
@@ -22,10 +23,23 @@ export default function ExpensesScreen() {
   const { trip } = useActiveTrip();
   const { categories } = useCategories();
   const [filter, setFilter] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
   const { expenses, reload } = useExpenses(
     trip?.id ?? null,
     filter ? { categoryId: filter } : undefined
   );
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return expenses;
+    return expenses.filter((e) => {
+      const label = categoryLabel(
+        { name: e.category_name, is_default: e.category_is_default },
+        t
+      ).toLowerCase();
+      return (e.note ?? '').toLowerCase().includes(q) || label.includes(q);
+    });
+  }, [expenses, query, t]);
 
   function confirmDelete(exp: ExpenseWithCategory) {
     Alert.alert('', t('expenses.deleteConfirm'), [
@@ -53,6 +67,14 @@ export default function ExpensesScreen() {
 
   return (
     <Screen title={t('expenses.title')}>
+      <View style={styles.searchWrap}>
+        <TextField
+          placeholder={t('expenses.search')}
+          value={query}
+          onChangeText={setQuery}
+          autoCorrect={false}
+        />
+      </View>
       <View style={styles.filterWrap}>
         <ScrollView
           horizontal
@@ -76,9 +98,10 @@ export default function ExpensesScreen() {
       </View>
 
       <FlatList
-        data={expenses}
+        data={visible}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={<Text style={styles.empty}>{t('expenses.empty')}</Text>}
         renderItem={({ item }) => (
           <Pressable
@@ -145,6 +168,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
     fontSize: fontSize.md,
     marginTop: spacing.xxl,
   },
+  searchWrap: { paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   filterWrap: { paddingBottom: spacing.sm },
   filterRow: { gap: spacing.sm, paddingHorizontal: spacing.lg },
   filterChip: {
