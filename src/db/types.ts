@@ -37,6 +37,7 @@ export type ExpenseRow = {
   note: string | null;
   spent_at: number;
   created_at: number;
+  one_time: number; // 1 — разовая трата (жильё, билеты), не проецируется на дни
 };
 
 export type RateRow = {

@@ -19,6 +19,7 @@ import { CurrencyPicker } from '../../src/components/CurrencyPicker';
 import { DateField } from '../../src/components/DateField';
 import { Screen } from '../../src/components/Screen';
 import { TextField } from '../../src/components/TextField';
+import { ToggleRow } from '../../src/components/ToggleRow';
 import { useActiveTrip, useCategories, useExpenses, useTemplates } from '../../src/hooks/data';
 import type { TemplateRow } from '../../src/db/types';
 import { evalExpression, looksLikeExpression } from '../../src/lib/calc';
@@ -46,6 +47,7 @@ export default function AddExpenseScreen() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [spentAt, setSpentAt] = useState<number | null>(null); // null = «Сейчас»
+  const [oneTime, setOneTime] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -114,6 +116,7 @@ export default function AddExpenseScreen() {
         rateUsed: rate,
         note: note.trim() || null,
         spentAt: spentAt ?? undefined,
+        oneTime,
       });
       setSetting('last_currency', currency).catch(() => {});
       reloadExpenses();
@@ -121,6 +124,7 @@ export default function AddExpenseScreen() {
       setAmount('');
       setNote('');
       setSpentAt(null);
+      setOneTime(false);
       setSavedFlash(true);
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setSavedFlash(false), 1800);
@@ -246,6 +250,13 @@ export default function AddExpenseScreen() {
             onChange={setSpentAt}
             nullLabel={t('common.now')}
             locale={i18n.language}
+          />
+
+          <ToggleRow
+            label={t('add.oneTime')}
+            hint={t('add.oneTimeHint')}
+            value={oneTime}
+            onValueChange={setOneTime}
           />
 
           <Button

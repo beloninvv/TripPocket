@@ -19,6 +19,7 @@ export type NewExpense = {
   rateUsed?: number | null;
   note?: string | null;
   spentAt?: number; // по умолчанию — сейчас
+  oneTime?: boolean;
 };
 
 const SELECT_WITH_CATEGORY = `
@@ -59,8 +60,8 @@ export async function addExpense(data: NewExpense): Promise<string> {
   const now = Date.now();
   await getDb().runAsync(
     `INSERT INTO expenses
-       (id, trip_id, user_id, amount, currency, amount_base, rate_used, category_id, note, spent_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       (id, trip_id, user_id, amount, currency, amount_base, rate_used, category_id, note, spent_at, created_at, one_time)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       id,
       data.tripId,
@@ -73,6 +74,7 @@ export async function addExpense(data: NewExpense): Promise<string> {
       data.note ?? null,
       data.spentAt ?? now,
       now,
+      data.oneTime ? 1 : 0,
     ]
   );
   return id;
@@ -91,6 +93,7 @@ export async function updateExpense(
   if (data.categoryId !== undefined) { fields.push('category_id = ?'); values.push(data.categoryId); }
   if (data.note !== undefined) { fields.push('note = ?'); values.push(data.note); }
   if (data.spentAt !== undefined) { fields.push('spent_at = ?'); values.push(data.spentAt); }
+  if (data.oneTime !== undefined) { fields.push('one_time = ?'); values.push(data.oneTime ? 1 : 0); }
   if (fields.length === 0) return;
   values.push(id);
   await getDb().runAsync(`UPDATE expenses SET ${fields.join(', ')} WHERE id = ?`, values);

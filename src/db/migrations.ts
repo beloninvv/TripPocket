@@ -129,6 +129,15 @@ const migrations: Migration[] = [
       `);
     },
   },
+  {
+    version: 3,
+    up: async (db) => {
+      // Флаг разовой траты (жильё/билеты) — не проецируется на дни в прогнозе
+      await db.execAsync(
+        'ALTER TABLE expenses ADD COLUMN one_time INTEGER NOT NULL DEFAULT 0;'
+      );
+    },
+  },
 ];
 
 /** Текущая целевая версия схемы. */

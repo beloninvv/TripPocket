@@ -61,6 +61,7 @@ export function computeTripStats(
 ): TripStats {
   const base = trip.base_currency;
   let total = 0;
+  let dailyTotal = 0; // только не-разовые траты (для проекции на дни)
   let hasUnconverted = false;
   let convertedCount = 0;
   let maxTransaction = 0;
@@ -77,6 +78,7 @@ export function computeTripStats(
       continue;
     }
     total += value;
+    if (exp.one_time !== 1) dailyTotal += value;
     convertedCount += 1;
     if (value > maxTransaction) maxTransaction = value;
 
@@ -147,11 +149,15 @@ export function computeTripStats(
   const lastTs = Math.min(trip.end_date ?? Date.now(), Date.now());
   const days = dayCount(firstTs, Math.max(lastTs, firstTs));
   const avgPerDay = total / days;
+  const dailyAvg = dailyTotal / days; // средний ЕЖЕДНЕВНЫЙ расход (без разовых)
 
+  // Прогноз: уже потрачено (включая разовые) + проекция ежедневных на остаток дней.
+  // Разовые траты (жильё, билеты) не множатся на дни.
   let forecastTotal: number | null = null;
   if (trip.end_date && trip.end_date > Date.now()) {
     const totalDays = dayCount(firstTs, trip.end_date);
-    forecastTotal = avgPerDay * totalDays;
+    const daysRemaining = Math.max(0, totalDays - days);
+    forecastTotal = total + dailyAvg * daysRemaining;
   }
 
   const budget = trip.budget;

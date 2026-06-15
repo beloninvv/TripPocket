@@ -32,6 +32,8 @@
     "notePlaceholder": "What did you buy?",
     "pickCategory": "Pick a category",
     "saved": "Expense saved",
+    "oneTime": "One-time expense",
+    "oneTimeHint": "Lodging, tickets — not spread over days in the forecast",
     "noActiveTrip": "Create a trip first",
     "createTrip": "Create trip"
   },

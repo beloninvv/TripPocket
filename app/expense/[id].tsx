@@ -9,6 +9,7 @@ import { CurrencyPicker } from '../../src/components/CurrencyPicker';
 import { DateField } from '../../src/components/DateField';
 import { ModalHeader } from '../../src/components/ModalHeader';
 import { TextField } from '../../src/components/TextField';
+import { ToggleRow } from '../../src/components/ToggleRow';
 import { useActiveTrip, useCategories } from '../../src/hooks/data';
 import {
   deleteExpense,
@@ -35,6 +36,7 @@ export default function EditExpenseScreen() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [spentAt, setSpentAt] = useState<number>(Date.now());
+  const [oneTime, setOneTime] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function EditExpenseScreen() {
         setCategoryId(exp.category_id);
         setNote(exp.note ?? '');
         setSpentAt(exp.spent_at);
+        setOneTime(exp.one_time === 1);
       }
       setLoaded(true);
     })();
@@ -70,6 +73,7 @@ export default function EditExpenseScreen() {
         rateUsed: rate,
         note: note.trim() || null,
         spentAt,
+        oneTime,
       });
       router.back();
     } finally {
@@ -118,6 +122,13 @@ export default function EditExpenseScreen() {
             value={spentAt}
             onChange={(v) => v != null && setSpentAt(v)}
             locale={i18n.language}
+          />
+
+          <ToggleRow
+            label={t('add.oneTime')}
+            hint={t('add.oneTimeHint')}
+            value={oneTime}
+            onValueChange={setOneTime}
           />
 
           <Button
