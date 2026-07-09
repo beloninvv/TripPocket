@@ -162,6 +162,11 @@ export default function SettingsScreen() {
             onPress={() => router.push('/converter')}
           />
           <ActionRow
+            icon="create-outline"
+            label={t('rates.manage')}
+            onPress={() => router.push('/rates')}
+          />
+          <ActionRow
             icon="refresh-outline"
             label={t('settings.refreshRates')}
             subtitle={
@@ -193,7 +198,7 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.footer}>TripPocket · сборка 6</Text>
+        <Text style={styles.footer}>TripPocket · сборка 11</Text>
       </ScrollView>
     </Screen>
   );

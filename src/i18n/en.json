@@ -1,8 +1,8 @@
 {
   "tabs": {
     "add": "Add",
-    "expenses": "Expenses",
-    "analytics": "Analytics",
+    "expenses": "Journal",
+    "analytics": "Overview",
     "trips": "Trips",
     "settings": "Settings"
   },
@@ -24,24 +24,45 @@
     "dateTime": "Date & time",
     "all": "All",
     "empty": "Nothing yet",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "expense": "Expense",
+    "income": "Income"
   },
   "add": {
-    "title": "New expense",
+    "title": "New entry",
     "amountPlaceholder": "0",
     "notePlaceholder": "What did you buy?",
     "pickCategory": "Pick a category",
-    "saved": "Expense saved",
+    "saved": "Saved",
+    "sphere": "Sphere",
+    "monthSpent": "Month",
+    "inTrip": "On the trip",
+    "inTripHint": "Counts toward the trip budget and analytics",
     "oneTime": "One-time expense",
     "oneTimeHint": "Lodging, tickets — not spread over days in the forecast",
     "noActiveTrip": "Create a trip first",
     "createTrip": "Create trip"
   },
   "expenses": {
-    "title": "Expenses",
-    "empty": "No expenses yet — add your first",
-    "search": "Search expenses",
-    "deleteConfirm": "Delete this expense?"
+    "title": "Journal",
+    "empty": "No entries",
+    "search": "Search entries",
+    "deleteConfirm": "Delete this entry?"
+  },
+  "overview": {
+    "title": "Overview",
+    "wallet": "Wallet",
+    "expense": "Expenses",
+    "income": "Income",
+    "delta": "Delta",
+    "savingsRate": "Savings",
+    "bySphere": "By sphere",
+    "noSphere": "No sphere",
+    "incomeBySource": "Income by source",
+    "history": "By month",
+    "day": "day",
+    "limit": "limit",
+    "overLimit": "over limit"
   },
   "analytics": {
     "title": "Analytics",
@@ -110,7 +131,30 @@
     "from": "From",
     "result": "Result"
   },
+  "rates": {
+    "title": "My rates",
+    "manage": "My exchange rates",
+    "hint": "Record an exchange: how much you paid and how much currency you received. Expenses between these currencies will convert at your rate; online refresh won't overwrite it.",
+    "got": "Received",
+    "paid": "Paid",
+    "paidCurrency": "What you paid with",
+    "gotCurrency": "What you received",
+    "current": "Now",
+    "yours": "your rate",
+    "saveRate": "Save rate",
+    "sameCurrency": "Pick two different currencies",
+    "saved": "Saved rates",
+    "empty": "No custom rates — conversion uses automatic ones",
+    "removeConfirm": "Remove your {{pair}} rate? The automatic one will be used.",
+    "savedTitle": "Rate saved",
+    "recalcAsk": "Recalculate already recorded {{pair}} expenses at the new rate?",
+    "recalcNo": "Keep as is",
+    "recalcYes": "Recalculate",
+    "recalcDone": "Expenses recalculated: {{count}}"
+  },
   "categories": {
+    "common": "Shared",
+    "inUse": "This category has entries — move or delete them first",
     "food": "Food",
     "transport": "Transport",
     "lodging": "Lodging",

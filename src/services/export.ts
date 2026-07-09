@@ -3,14 +3,36 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 
 import { getDb } from '../db';
+import { LOCAL_USER_ID } from '../db/migrations';
 import i18n from '../i18n';
 import { categoryLabel } from '../lib/category';
 import type {
   CategoryRow,
-  ExpenseRow,
+  RateRow,
   SettingRow,
+  SphereRow,
+  TransactionRow,
   TripRow,
 } from '../db/types';
+
+/**
+ * Формат бэкапа v2 (единый журнал). Этим же файлом пользуется внешний
+ * скрипт аналитики: transactions + categories + spheres + trips достаточно,
+ * чтобы воспроизвести любые отчёты. Все суммы: amount — в валюте операции,
+ * amount_home — в домашней валюте (settings.base_currency), amount_base —
+ * в базовой валюте поездки (если запись сделана в контексте поездки).
+ */
+export type BackupV2 = {
+  version: 2;
+  exportedAt: number;
+  homeCurrency: string;
+  trips: TripRow[];
+  transactions: TransactionRow[];
+  categories: CategoryRow[];
+  spheres: SphereRow[];
+  settings: SettingRow[];
+  rates: RateRow[];
+};
 
 /** Экранирование значения для CSV. */
 function csvCell(value: string | number | null): string {
@@ -19,63 +41,77 @@ function csvCell(value: string | number | null): string {
   return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
-type ExportRow = ExpenseRow & {
-  trip_name: string;
-  base_currency: string;
+type CsvRow = TransactionRow & {
   category_name: string;
   category_is_default: number;
+  sphere_name: string | null;
+  trip_name: string | null;
 };
 
 async function buildCsv(): Promise<string> {
-  const rows = await getDb().getAllAsync<ExportRow>(`
-    SELECT e.*, t.name AS trip_name, t.base_currency AS base_currency,
-           c.name AS category_name, c.is_default AS category_is_default
-    FROM expenses e
-    JOIN trips t ON t.id = e.trip_id
-    JOIN categories c ON c.id = e.category_id
-    ORDER BY e.spent_at DESC
+  const rows = await getDb().getAllAsync<CsvRow>(`
+    SELECT tx.*,
+           c.name AS category_name, c.is_default AS category_is_default,
+           s.name AS sphere_name,
+           t.name AS trip_name
+    FROM transactions tx
+    JOIN categories c ON c.id = tx.category_id
+    LEFT JOIN spheres s ON s.id = tx.sphere_id
+    LEFT JOIN trips t ON t.id = tx.trip_id
+    ORDER BY tx.spent_at DESC
   `);
 
   const header = [
-    'date', 'trip', 'category', 'amount', 'currency',
-    'amount_base', 'base_currency', 'note',
+    'date', 'type', 'sphere', 'trip', 'category', 'amount', 'currency',
+    'amount_home', 'note', 'one_time',
   ].join(',');
 
   const lines = rows.map((r) => {
-    const date = new Date(r.spent_at).toISOString();
     const category = categoryLabel(
       { name: r.category_name, is_default: r.category_is_default },
       i18n.t.bind(i18n) as never
     );
     return [
-      csvCell(date),
+      csvCell(new Date(r.spent_at).toISOString()),
+      csvCell(r.type),
+      csvCell(r.sphere_name),
       csvCell(r.trip_name),
       csvCell(category),
       csvCell(r.amount),
       csvCell(r.currency),
-      csvCell(r.amount_base),
-      csvCell(r.base_currency),
+      csvCell(r.amount_home),
       csvCell(r.note),
+      csvCell(r.one_time),
     ].join(',');
   });
 
   return [header, ...lines].join('\n');
 }
 
-/** Полный бэкап в JSON — пригоден для восстановления. */
+/** Полный бэкап в JSON v2 — восстановление и внешняя аналитика. */
 async function buildJson(): Promise<string> {
   const db = getDb();
-  const [trips, expenses, categories, settings] = await Promise.all([
+  const [trips, transactions, categories, spheres, settings, rates] = await Promise.all([
     db.getAllAsync<TripRow>('SELECT * FROM trips'),
-    db.getAllAsync<ExpenseRow>('SELECT * FROM expenses'),
+    db.getAllAsync<TransactionRow>('SELECT * FROM transactions'),
     db.getAllAsync<CategoryRow>('SELECT * FROM categories'),
+    db.getAllAsync<SphereRow>('SELECT * FROM spheres'),
     db.getAllAsync<SettingRow>('SELECT * FROM settings'),
+    db.getAllAsync<RateRow>('SELECT * FROM rates WHERE manual = 1'),
   ]);
-  return JSON.stringify(
-    { version: 1, exportedAt: Date.now(), trips, expenses, categories, settings },
-    null,
-    2
-  );
+  const home = settings.find((s) => s.key === 'base_currency')?.value ?? 'RUB';
+  const backup: BackupV2 = {
+    version: 2,
+    exportedAt: Date.now(),
+    homeCurrency: home,
+    trips,
+    transactions,
+    categories,
+    spheres,
+    settings,
+    rates,
+  };
+  return JSON.stringify(backup, null, 2);
 }
 
 async function writeAndShare(filename: string, content: string, mimeType: string) {
@@ -103,10 +139,31 @@ export async function exportJson(): Promise<void> {
 
 export type ImportResult = { trips: number; expenses: number };
 
+/** Старый бэкап v1 (до журнала): расходы поездок. */
+type BackupV1 = {
+  version?: number;
+  trips?: TripRow[];
+  expenses?: {
+    id: string;
+    trip_id: string;
+    user_id: string;
+    amount: number;
+    currency: string;
+    amount_base: number | null;
+    rate_used: number | null;
+    category_id: string;
+    note: string | null;
+    spent_at: number;
+    created_at: number;
+    one_time?: number;
+  }[];
+  categories?: CategoryRow[];
+  settings?: SettingRow[];
+};
+
 /**
- * Восстанавливает данные из JSON-бэкапа (созданного exportJson).
- * Полностью заменяет текущие поездки, траты, категории и настройки.
- * Возвращает null, если пользователь отменил выбор файла.
+ * Восстанавливает данные из JSON-бэкапа (v1 или v2).
+ * Полностью заменяет текущие данные. Возвращает null при отмене выбора файла.
  */
 export async function importJson(): Promise<ImportResult | null> {
   const picked = await DocumentPicker.getDocumentAsync({
@@ -116,13 +173,78 @@ export async function importJson(): Promise<ImportResult | null> {
   if (picked.canceled || !picked.assets?.[0]) return null;
 
   const content = await new File(picked.assets[0].uri).text();
-  const data = JSON.parse(content) as {
-    trips?: TripRow[];
-    expenses?: ExpenseRow[];
-    categories?: CategoryRow[];
-    settings?: SettingRow[];
-  };
+  const data = JSON.parse(content) as BackupV1 | BackupV2;
 
+  if ('transactions' in data && Array.isArray(data.transactions)) {
+    return importV2(data as BackupV2);
+  }
+  return importV1(data as BackupV1);
+}
+
+async function importV2(data: BackupV2): Promise<ImportResult> {
+  if (!Array.isArray(data.transactions) || !Array.isArray(data.categories)) {
+    throw new Error('Invalid backup file');
+  }
+  const db = getDb();
+  await db.withTransactionAsync(async () => {
+    await db.execAsync(
+      `DELETE FROM transactions; DELETE FROM trips; DELETE FROM categories;
+       DELETE FROM spheres; DELETE FROM settings;
+       DELETE FROM rates WHERE manual = 1;`
+    );
+    for (const s of data.spheres ?? []) {
+      await db.runAsync(
+        `INSERT INTO spheres (id, user_id, name, icon, monthly_limit, daily_limit, is_default, sort_order)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [s.id, s.user_id ?? LOCAL_USER_ID, s.name, s.icon, s.monthly_limit, s.daily_limit, s.is_default ?? 0, s.sort_order ?? 0]
+      );
+    }
+    for (const c of data.categories) {
+      await db.runAsync(
+        `INSERT INTO categories (id, user_id, name, icon, is_default, sort_order, kind, sphere_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [c.id, c.user_id ?? LOCAL_USER_ID, c.name, c.icon, c.is_default ?? 0, c.sort_order ?? 0, c.kind ?? 'expense', c.sphere_id ?? null]
+      );
+    }
+    for (const tr of data.trips ?? []) {
+      await db.runAsync(
+        `INSERT INTO trips (id, user_id, name, base_currency, budget, start_date, end_date, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [tr.id, tr.user_id ?? LOCAL_USER_ID, tr.name, tr.base_currency, tr.budget, tr.start_date, tr.end_date, tr.created_at]
+      );
+    }
+    for (const tx of data.transactions) {
+      await db.runAsync(
+        `INSERT INTO transactions
+           (id, user_id, type, amount, currency, amount_home, rate_home, amount_base,
+            rate_used, category_id, sphere_id, trip_id, note, one_time, spent_at, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          tx.id, tx.user_id ?? LOCAL_USER_ID, tx.type ?? 'expense', tx.amount, tx.currency,
+          tx.amount_home ?? null, tx.rate_home ?? null, tx.amount_base ?? null,
+          tx.rate_used ?? null, tx.category_id, tx.sphere_id ?? null, tx.trip_id ?? null,
+          tx.note ?? null, tx.one_time ?? 0, tx.spent_at, tx.created_at ?? tx.spent_at,
+        ]
+      );
+    }
+    for (const s of data.settings ?? []) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)',
+        [s.key, s.value]
+      );
+    }
+    for (const r of data.rates ?? []) {
+      await db.runAsync(
+        `INSERT INTO rates (base, currency, rate, updated_at, manual) VALUES (?, ?, ?, ?, 1)
+         ON CONFLICT(base, currency) DO UPDATE SET rate = excluded.rate, updated_at = excluded.updated_at, manual = 1`,
+        [r.base, r.currency, r.rate, r.updated_at ?? Date.now()]
+      );
+    }
+  });
+  return { trips: data.trips?.length ?? 0, expenses: data.transactions.length };
+}
+
+async function importV1(data: BackupV1): Promise<ImportResult> {
   const trips = data.trips;
   const expenses = data.expenses;
   if (!Array.isArray(trips) || !Array.isArray(expenses)) {
@@ -134,35 +256,38 @@ export async function importJson(): Promise<ImportResult | null> {
   const db = getDb();
   await db.withTransactionAsync(async () => {
     await db.execAsync(
-      'DELETE FROM expenses; DELETE FROM trips; DELETE FROM categories; DELETE FROM settings;'
+      'DELETE FROM transactions; DELETE FROM trips; DELETE FROM categories; DELETE FROM settings;'
     );
-
     for (const c of categories) {
       await db.runAsync(
-        `INSERT INTO categories (id, user_id, name, icon, is_default, sort_order)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [c.id, c.user_id, c.name, c.icon, c.is_default, c.sort_order]
+        `INSERT INTO categories (id, user_id, name, icon, is_default, sort_order, kind, sphere_id)
+         VALUES (?, ?, ?, ?, ?, ?, 'expense', NULL)`,
+        [c.id, c.user_id ?? LOCAL_USER_ID, c.name, c.icon, c.is_default ?? 0, c.sort_order ?? 0]
       );
     }
     for (const tr of trips) {
       await db.runAsync(
         `INSERT INTO trips (id, user_id, name, base_currency, budget, start_date, end_date, created_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [tr.id, tr.user_id, tr.name, tr.base_currency, tr.budget, tr.start_date, tr.end_date, tr.created_at]
+        [tr.id, tr.user_id ?? LOCAL_USER_ID, tr.name, tr.base_currency, tr.budget, tr.start_date, tr.end_date, tr.created_at]
       );
     }
     for (const e of expenses) {
       await db.runAsync(
-        `INSERT INTO expenses
-           (id, trip_id, user_id, amount, currency, amount_base, rate_used, category_id, note, spent_at, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [e.id, e.trip_id, e.user_id, e.amount, e.currency, e.amount_base, e.rate_used, e.category_id, e.note, e.spent_at, e.created_at]
+        `INSERT INTO transactions
+           (id, user_id, type, amount, currency, amount_home, rate_home, amount_base,
+            rate_used, category_id, sphere_id, trip_id, note, one_time, spent_at, created_at)
+         VALUES (?, ?, 'expense', ?, ?, NULL, NULL, ?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+        [
+          e.id, e.user_id ?? LOCAL_USER_ID, e.amount, e.currency, e.amount_base,
+          e.rate_used, e.category_id, e.trip_id, e.note, e.one_time ?? 0,
+          e.spent_at, e.created_at,
+        ]
       );
     }
     for (const s of settings) {
-      await db.runAsync('INSERT INTO settings (key, value) VALUES (?, ?)', [s.key, s.value]);
+      await db.runAsync('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [s.key, s.value]);
     }
   });
-
   return { trips: trips.length, expenses: expenses.length };
 }

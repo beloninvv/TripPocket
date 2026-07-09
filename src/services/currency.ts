@@ -1,3 +1,7 @@
+import {
+  listTripTransactions,
+  updateTransaction,
+} from '../repositories/transactionsRepo';
 import { getRate, lastRatesUpdate, upsertRates } from '../repositories/ratesRepo';
 
 /**
@@ -72,4 +76,17 @@ export async function convertToBase(
   if (!row) return { amountBase: null, rate: null };
 
   return { amountBase: amount * row.rate, rate: row.rate };
+}
+
+/**
+ * Пересчитывает amount_base всех записей поездки в новую базовую валюту —
+ * нужно при смене base_currency у поездки. Учитывает ручные курсы.
+ */
+export async function reconvertTripExpenses(tripId: string, base: string): Promise<void> {
+  await ensureRatesFresh(base);
+  const txs = await listTripTransactions(tripId);
+  for (const tx of txs) {
+    const { amountBase, rate } = await convertToBase(tx.amount, tx.currency, base);
+    await updateTransaction(tx.id, { amountBase, rateUsed: rate });
+  }
 }

@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ModalHeader } from '../../src/components/ModalHeader';
 import { TripForm, TripFormValues } from '../../src/components/TripForm';
 import { deleteTrip, getTrip, updateTrip } from '../../src/repositories/tripsRepo';
+import { reconvertTripExpenses } from '../../src/services/currency';
 import { Colors } from '../../src/theme';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
@@ -42,6 +43,10 @@ export default function EditTripScreen() {
       startDate: values.startDate,
       endDate: values.endDate,
     });
+    // Сменили базовую валюту — приводим amount_base всех трат к новой базе
+    if (initial && values.baseCurrency !== initial.baseCurrency) {
+      await reconvertTripExpenses(id, values.baseCurrency);
+    }
     router.back();
   }
 

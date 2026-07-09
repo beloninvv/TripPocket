@@ -10,30 +10,36 @@ import { DateField } from '../../src/components/DateField';
 import { ModalHeader } from '../../src/components/ModalHeader';
 import { TextField } from '../../src/components/TextField';
 import { ToggleRow } from '../../src/components/ToggleRow';
-import { useActiveTrip, useCategories } from '../../src/hooks/data';
+import { useCategories, useSpheres } from '../../src/hooks/data';
+import type { TransactionType } from '../../src/db/types';
 import {
-  deleteExpense,
-  getExpense,
-  updateExpense,
-} from '../../src/repositories/expensesRepo';
+  deleteTransaction,
+  getTransaction,
+  updateTransaction,
+} from '../../src/repositories/transactionsRepo';
+import { getSetting } from '../../src/repositories/settingsRepo';
+import { getTrip } from '../../src/repositories/tripsRepo';
 import { evalExpression } from '../../src/lib/calc';
 import { convertToBase } from '../../src/services/currency';
 import { Colors, fontSize, spacing } from '../../src/theme';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
-export default function EditExpenseScreen() {
+export default function EditTransactionScreen() {
   const { t, i18n } = useTranslation();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { trip } = useActiveTrip();
   const { categories } = useCategories();
+  const { spheres } = useSpheres();
 
   const [loaded, setLoaded] = useState(false);
+  const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('RUB');
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [sphereId, setSphereId] = useState<string | null>(null);
+  const [tripId, setTripId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [spentAt, setSpentAt] = useState<number>(Date.now());
   const [oneTime, setOneTime] = useState(false);
@@ -42,18 +48,31 @@ export default function EditExpenseScreen() {
   useEffect(() => {
     (async () => {
       if (!id) return;
-      const exp = await getExpense(id);
-      if (exp) {
-        setAmount(String(exp.amount));
-        setCurrency(exp.currency);
-        setCategoryId(exp.category_id);
-        setNote(exp.note ?? '');
-        setSpentAt(exp.spent_at);
-        setOneTime(exp.one_time === 1);
+      const tx = await getTransaction(id);
+      if (tx) {
+        setType(tx.type);
+        setAmount(String(tx.amount));
+        setCurrency(tx.currency);
+        setCategoryId(tx.category_id);
+        setSphereId(tx.sphere_id);
+        setTripId(tx.trip_id);
+        setNote(tx.note ?? '');
+        setSpentAt(tx.spent_at);
+        setOneTime(tx.one_time === 1);
       }
       setLoaded(true);
     })();
   }, [id]);
+
+  const visibleCategories = useMemo(
+    () =>
+      type === 'income'
+        ? categories.filter((c) => c.kind === 'income')
+        : categories.filter(
+            (c) => c.kind === 'expense' && (c.sphere_id == null || c.sphere_id === sphereId)
+          ),
+    [categories, type, sphereId]
+  );
 
   const computed = evalExpression(amount);
   const amountValue = computed != null && computed > 0 ? computed : null;
@@ -63,14 +82,26 @@ export default function EditExpenseScreen() {
     if (!id || amountValue == null || !categoryId) return;
     setSaving(true);
     try {
-      const base = trip?.base_currency ?? currency;
-      const { amountBase, rate } = await convertToBase(amountValue, currency, base);
-      await updateExpense(id, {
+      const home = (await getSetting('base_currency')) || 'RUB';
+      const homeConv = await convertToBase(amountValue, currency, home);
+      let amountBase: number | null = null;
+      let rateUsed: number | null = null;
+      if (tripId) {
+        const trip = await getTrip(tripId);
+        if (trip) {
+          const conv = await convertToBase(amountValue, currency, trip.base_currency);
+          amountBase = conv.amountBase;
+          rateUsed = conv.rate;
+        }
+      }
+      await updateTransaction(id, {
         amount: amountValue,
         currency,
         categoryId,
+        amountHome: homeConv.amountBase,
+        rateHome: homeConv.rate,
         amountBase,
-        rateUsed: rate,
+        rateUsed,
         note: note.trim() || null,
         spentAt,
         oneTime,
@@ -83,7 +114,7 @@ export default function EditExpenseScreen() {
 
   async function onDelete() {
     if (!id) return;
-    await deleteExpense(id);
+    await deleteTransaction(id);
     router.back();
   }
 
@@ -108,9 +139,30 @@ export default function EditExpenseScreen() {
             <CurrencyPicker value={currency} onChange={setCurrency} />
           </View>
 
+          {type === 'expense' && spheres.length > 0 ? (
+            <View style={styles.field}>
+              <Text style={styles.label}>{t('add.sphere')}</Text>
+              <View style={styles.chipRow}>
+                {spheres.map((s) => (
+                  <Text
+                    key={s.id}
+                    onPress={() => setSphereId(sphereId === s.id ? null : s.id)}
+                    style={[styles.chip, sphereId === s.id && styles.chipActive]}
+                  >
+                    {s.name}
+                  </Text>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
           <View style={styles.field}>
             <Text style={styles.label}>{t('common.category')}</Text>
-            <CategoryPicker categories={categories} value={categoryId} onChange={setCategoryId} />
+            <CategoryPicker
+              categories={visibleCategories}
+              value={categoryId}
+              onChange={setCategoryId}
+            />
           </View>
 
           <TextField label={t('common.note')} value={note} onChangeText={setNote} />
@@ -124,12 +176,14 @@ export default function EditExpenseScreen() {
             locale={i18n.language}
           />
 
-          <ToggleRow
-            label={t('add.oneTime')}
-            hint={t('add.oneTimeHint')}
-            value={oneTime}
-            onValueChange={setOneTime}
-          />
+          {type === 'expense' ? (
+            <ToggleRow
+              label={t('add.oneTime')}
+              hint={t('add.oneTimeHint')}
+              value={oneTime}
+              onValueChange={setOneTime}
+            />
+          ) : null}
 
           <Button
             title={t('common.save')}
@@ -151,4 +205,21 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   body: { padding: spacing.lg, gap: spacing.lg },
   field: { gap: spacing.sm },
   label: { fontSize: fontSize.sm, color: colors.textMuted },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    color: colors.text,
+    fontSize: fontSize.sm,
+    overflow: 'hidden',
+  },
+  chipActive: {
+    backgroundColor: colors.primaryMuted,
+    borderColor: colors.primary,
+    color: colors.primary,
+  },
 });

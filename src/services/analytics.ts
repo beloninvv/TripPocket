@@ -1,6 +1,6 @@
-import type { TripRow } from '../db/types';
-import type { ExpenseWithCategory } from '../repositories/expensesRepo';
-import { dayCount, startOfDay } from '../lib/date';
+import type { SphereRow, TripRow } from '../db/types';
+import type { TransactionWithCategory } from '../repositories/transactionsRepo';
+import { dayCount, daysInMonth, startOfDay, startOfMonth } from '../lib/date';
 
 export type CategoryStat = {
   categoryId: string;
@@ -8,7 +8,7 @@ export type CategoryStat = {
   icon: string | null;
   isDefault: number;
   total: number;
-  count: number; // число трат в категории
+  count: number; // число записей в категории
   avg: number; // средний чек по категории
   share: number; // доля 0..1
 };
@@ -24,6 +24,8 @@ export type CurrencyStat = {
   amountBase: number; // пересчёт в базовую
   count: number;
 };
+
+/* ============================= Поездка ============================= */
 
 export type TripStats = {
   base: string;
@@ -48,17 +50,19 @@ export type TripStats = {
   convertedCount: number; // трат, учтённых в базовой валюте
 };
 
-/** Сумма траты в базовой валюте, либо null если курс неизвестен. */
-function baseAmount(exp: ExpenseWithCategory, base: string): number | null {
-  if (exp.amount_base != null) return exp.amount_base;
-  if (exp.currency === base) return exp.amount;
+/** Сумма траты в базовой валюте поездки, либо null если курс неизвестен. */
+function tripAmount(tx: TransactionWithCategory, base: string): number | null {
+  if (tx.amount_base != null) return tx.amount_base;
+  if (tx.currency === base) return tx.amount;
   return null;
 }
 
+/** Статистика поездки — по расходам журнала с контекстом этой поездки. */
 export function computeTripStats(
   trip: TripRow,
-  expenses: ExpenseWithCategory[]
+  transactions: TransactionWithCategory[]
 ): TripStats {
+  const expenses = transactions.filter((t) => t.type === 'expense');
   const base = trip.base_currency;
   let total = 0;
   let dailyTotal = 0; // только не-разовые траты (для проекции на дни)
@@ -71,68 +75,45 @@ export function computeTripStats(
   const curMap = new Map<string, CurrencyStat>();
   const byWeekday = new Array<number>(7).fill(0);
 
-  for (const exp of expenses) {
-    const value = baseAmount(exp, base);
+  for (const tx of expenses) {
+    const value = tripAmount(tx, base);
     if (value == null) {
       hasUnconverted = true;
       continue;
     }
     total += value;
-    if (exp.one_time !== 1) dailyTotal += value;
+    if (tx.one_time !== 1) dailyTotal += value;
     convertedCount += 1;
     if (value > maxTransaction) maxTransaction = value;
 
-    const cur = curMap.get(exp.currency);
+    const cur = curMap.get(tx.currency);
     if (cur) {
-      cur.amountOriginal += exp.amount;
+      cur.amountOriginal += tx.amount;
       cur.amountBase += value;
       cur.count += 1;
     } else {
-      curMap.set(exp.currency, {
-        currency: exp.currency,
-        amountOriginal: exp.amount,
+      curMap.set(tx.currency, {
+        currency: tx.currency,
+        amountOriginal: tx.amount,
         amountBase: value,
         count: 1,
       });
     }
 
-    const existing = catMap.get(exp.category_id);
-    if (existing) {
-      existing.total += value;
-      existing.count += 1;
-    } else {
-      catMap.set(exp.category_id, {
-        categoryId: exp.category_id,
-        name: exp.category_name,
-        icon: exp.category_icon,
-        isDefault: exp.category_is_default,
-        total: value,
-        count: 1,
-        avg: 0,
-        share: 0,
-      });
-    }
+    addToCategoryMap(catMap, tx, value);
 
-    const day = startOfDay(exp.spent_at);
+    const day = startOfDay(tx.spent_at);
     dayMap.set(day, (dayMap.get(day) ?? 0) + value);
 
     // Пн-первый: getDay() 0=Вс → (d+6)%7 даёт 0=Пн … 6=Вс
-    const wd = (new Date(exp.spent_at).getDay() + 6) % 7;
+    const wd = (new Date(tx.spent_at).getDay() + 6) % 7;
     byWeekday[wd] += value;
   }
 
-  const byCategory = [...catMap.values()]
-    .map((c) => ({
-      ...c,
-      avg: c.count > 0 ? c.total / c.count : 0,
-      share: total > 0 ? c.total / total : 0,
-    }))
-    .sort((a, b) => b.total - a.total);
-
+  const byCategory = finalizeCategories(catMap, total);
   const byDay = [...dayMap.entries()]
     .map(([day, t]) => ({ day, total: t }))
     .sort((a, b) => a.day - b.day);
-
   const byCurrency = [...curMap.values()].sort((a, b) => b.amountBase - a.amountBase);
 
   // Накопительный итог по дням
@@ -152,7 +133,6 @@ export function computeTripStats(
   const dailyAvg = dailyTotal / days; // средний ЕЖЕДНЕВНЫЙ расход (без разовых)
 
   // Прогноз: уже потрачено (включая разовые) + проекция ежедневных на остаток дней.
-  // Разовые траты (жильё, билеты) не множатся на дни.
   let forecastTotal: number | null = null;
   if (trip.end_date && trip.end_date > Date.now()) {
     const totalDays = dayCount(firstTs, trip.end_date);
@@ -164,7 +144,6 @@ export function computeTripStats(
   const remaining = budget != null ? budget - total : null;
   const overBudget = remaining != null && remaining < 0;
 
-  // Сколько можно тратить в день на оставшиеся дни поездки (если задан конец)
   let daysLeft: number | null = null;
   let dailyAllowance: number | null = null;
   if (trip.end_date != null && trip.end_date >= startOfDay(Date.now())) {
@@ -173,7 +152,6 @@ export function computeTripStats(
       dailyAllowance = remaining / daysLeft;
     }
   }
-
 
   return {
     base,
@@ -197,4 +175,229 @@ export function computeTripStats(
     count: expenses.length,
     convertedCount,
   };
+}
+
+/* ========================= Месячный кошелёк ========================= */
+
+/** Сумма записи в домашней валюте, либо null если курс неизвестен. */
+export function homeAmount(
+  tx: TransactionWithCategory,
+  home: string
+): number | null {
+  if (tx.amount_home != null) return tx.amount_home;
+  if (tx.currency === home) return tx.amount;
+  return null;
+}
+
+export type SphereStat = {
+  sphereId: string | null; // null — записи без сферы (например, старые траты поездок)
+  name: string | null;
+  icon: string | null;
+  total: number;
+  share: number;
+  monthlyLimit: number | null;
+  dailyLimit: number | null;
+  avgPerDay: number; // на прошедшие дни месяца
+  overLimit: boolean; // превышен месячный или дневной лимит
+};
+
+export type MonthlyOverview = {
+  month: number; // startOfMonth
+  income: number;
+  expense: number;
+  delta: number; // income - expense
+  savingsRate: number | null; // delta / income
+  bySphere: SphereStat[];
+  byCategory: CategoryStat[]; // только расходы
+  byIncomeCategory: CategoryStat[];
+  byWeekday: number[]; // расходы, [0]=Пн
+  byDay: DayStat[]; // расходы по дням месяца
+  avgPerDay: number; // расходы / прошедшие дни месяца
+  daysElapsed: number;
+  hasUnconverted: boolean;
+  expenseCount: number;
+};
+
+/**
+ * Месячный обзор кошелька: доходы, расходы по сферам/категориям, дельта,
+ * % накоплений, лимиты. Всё в домашней валюте; записи без курса пропускаются
+ * и помечаются hasUnconverted.
+ */
+export function computeMonthlyOverview(
+  month: number,
+  transactions: TransactionWithCategory[], // записи этого месяца
+  spheres: SphereRow[],
+  home: string
+): MonthlyOverview {
+  let income = 0;
+  let expense = 0;
+  let hasUnconverted = false;
+  let expenseCount = 0;
+
+  const catMap = new Map<string, CategoryStat>();
+  const incomeCatMap = new Map<string, CategoryStat>();
+  const sphereTotals = new Map<string | null, number>();
+  const dayMap = new Map<number, number>();
+  const byWeekday = new Array<number>(7).fill(0);
+
+  for (const tx of transactions) {
+    const value = homeAmount(tx, home);
+    if (value == null) {
+      hasUnconverted = true;
+      continue;
+    }
+    if (tx.type === 'income') {
+      income += value;
+      addToCategoryMap(incomeCatMap, tx, value);
+      continue;
+    }
+    expense += value;
+    expenseCount += 1;
+    addToCategoryMap(catMap, tx, value);
+    sphereTotals.set(tx.sphere_id, (sphereTotals.get(tx.sphere_id) ?? 0) + value);
+
+    const day = startOfDay(tx.spent_at);
+    dayMap.set(day, (dayMap.get(day) ?? 0) + value);
+    byWeekday[(new Date(tx.spent_at).getDay() + 6) % 7] += value;
+  }
+
+  // Прошедшие дни месяца: для текущего — до сегодня, для прошлых — весь месяц
+  const now = Date.now();
+  const daysElapsed =
+    startOfMonth(now) === month
+      ? new Date(now).getDate()
+      : daysInMonth(month);
+
+  const bySphere: SphereStat[] = [];
+  // Сначала известные сферы по порядку, затем «без сферы» если есть
+  for (const s of spheres) {
+    const total = sphereTotals.get(s.id) ?? 0;
+    if (total === 0 && !s.is_default) continue;
+    const avgPerDay = total / daysElapsed;
+    bySphere.push({
+      sphereId: s.id,
+      name: s.name,
+      icon: s.icon,
+      total,
+      share: expense > 0 ? total / expense : 0,
+      monthlyLimit: s.monthly_limit,
+      dailyLimit: s.daily_limit,
+      avgPerDay,
+      overLimit:
+        (s.monthly_limit != null && total > s.monthly_limit) ||
+        (s.daily_limit != null && avgPerDay > s.daily_limit),
+    });
+  }
+  const noSphere = sphereTotals.get(null) ?? 0;
+  if (noSphere > 0) {
+    bySphere.push({
+      sphereId: null,
+      name: null,
+      icon: null,
+      total: noSphere,
+      share: expense > 0 ? noSphere / expense : 0,
+      monthlyLimit: null,
+      dailyLimit: null,
+      avgPerDay: noSphere / daysElapsed,
+      overLimit: false,
+    });
+  }
+
+  const byDay = [...dayMap.entries()]
+    .map(([day, total]) => ({ day, total }))
+    .sort((a, b) => a.day - b.day);
+
+  return {
+    month,
+    income,
+    expense,
+    delta: income - expense,
+    savingsRate: income > 0 ? (income - expense) / income : null,
+    bySphere,
+    byCategory: finalizeCategories(catMap, expense),
+    byIncomeCategory: finalizeCategories(incomeCatMap, income),
+    byWeekday,
+    byDay,
+    avgPerDay: expense / daysElapsed,
+    daysElapsed,
+    hasUnconverted,
+    expenseCount,
+  };
+}
+
+export type MonthHistoryRow = {
+  month: number;
+  expense: number;
+  income: number;
+  delta: number;
+  savingsRate: number | null;
+  bySphere: Map<string | null, number>;
+};
+
+/** История по месяцам (как итоговая таблица в экселе), от старых к новым. */
+export function computeMonthlyHistory(
+  transactions: TransactionWithCategory[], // все записи
+  home: string
+): MonthHistoryRow[] {
+  const map = new Map<number, MonthHistoryRow>();
+  for (const tx of transactions) {
+    const value = homeAmount(tx, home);
+    if (value == null) continue;
+    const month = startOfMonth(tx.spent_at);
+    let row = map.get(month);
+    if (!row) {
+      row = { month, expense: 0, income: 0, delta: 0, savingsRate: null, bySphere: new Map() };
+      map.set(month, row);
+    }
+    if (tx.type === 'income') {
+      row.income += value;
+    } else {
+      row.expense += value;
+      row.bySphere.set(tx.sphere_id, (row.bySphere.get(tx.sphere_id) ?? 0) + value);
+    }
+  }
+  const rows = [...map.values()].sort((a, b) => a.month - b.month);
+  for (const row of rows) {
+    row.delta = row.income - row.expense;
+    row.savingsRate = row.income > 0 ? row.delta / row.income : null;
+  }
+  return rows;
+}
+
+/* ============================ Помощники ============================ */
+
+function addToCategoryMap(
+  map: Map<string, CategoryStat>,
+  tx: TransactionWithCategory,
+  value: number
+) {
+  const existing = map.get(tx.category_id);
+  if (existing) {
+    existing.total += value;
+    existing.count += 1;
+  } else {
+    map.set(tx.category_id, {
+      categoryId: tx.category_id,
+      name: tx.category_name,
+      icon: tx.category_icon,
+      isDefault: tx.category_is_default,
+      total: value,
+      count: 1,
+      avg: 0,
+      share: 0,
+    });
+  }
+}
+
+function finalizeCategories(
+  map: Map<string, CategoryStat>,
+  total: number
+): CategoryStat[] {
+  return [...map.values()]
+    .map((c) => ({
+      ...c,
+      avg: c.count > 0 ? c.total / c.count : 0,
+      share: total > 0 ? c.total / total : 0,
+    }))
+    .sort((a, b) => b.total - a.total);
 }

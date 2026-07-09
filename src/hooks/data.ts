@@ -2,10 +2,15 @@ import { useCallback, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 
 import { listCategories } from '../repositories/categoriesRepo';
-import { listExpenses, ExpenseWithCategory } from '../repositories/expensesRepo';
+import { listSpheres } from '../repositories/spheresRepo';
+import {
+  listTransactions,
+  TransactionFilter,
+  TransactionWithCategory,
+} from '../repositories/transactionsRepo';
 import { listTemplates } from '../repositories/templatesRepo';
 import { getActiveTrip, listTrips } from '../repositories/tripsRepo';
-import type { CategoryRow, TemplateRow, TripRow } from '../db/types';
+import type { CategoryRow, SphereRow, TemplateRow, TripRow } from '../db/types';
 
 /** Перезагружает данные каждый раз, когда экран получает фокус. */
 function useFocusLoader<T>(loader: () => Promise<T>, initial: T) {
@@ -41,8 +46,16 @@ export function useTrips() {
 }
 
 export function useCategories() {
-  const { data, loading, reload } = useFocusLoader<CategoryRow[]>(listCategories, []);
+  const { data, loading, reload } = useFocusLoader<CategoryRow[]>(
+    useCallback(() => listCategories(), []),
+    []
+  );
   return { categories: data, loading, reload };
+}
+
+export function useSpheres() {
+  const { data, loading, reload } = useFocusLoader<SphereRow[]>(listSpheres, []);
+  return { spheres: data, loading, reload };
 }
 
 export function useTemplates() {
@@ -50,14 +63,18 @@ export function useTemplates() {
   return { templates: data, loading, reload };
 }
 
-export function useExpenses(
-  tripId: string | null,
-  opts?: { categoryId?: string; from?: number; to?: number }
-) {
+export function useTransactions(filter?: TransactionFilter) {
   const loader = useCallback(
-    () => (tripId ? listExpenses(tripId, opts) : Promise.resolve([])),
-    [tripId, opts?.categoryId, opts?.from, opts?.to]
+    () => listTransactions(filter),
+    [
+      filter?.type,
+      filter?.sphereId,
+      filter?.tripId,
+      filter?.categoryId,
+      filter?.from,
+      filter?.to,
+    ]
   );
-  const { data, loading, reload } = useFocusLoader<ExpenseWithCategory[]>(loader, []);
-  return { expenses: data, loading, reload };
+  const { data, loading, reload } = useFocusLoader<TransactionWithCategory[]>(loader, []);
+  return { transactions: data, loading, reload };
 }
