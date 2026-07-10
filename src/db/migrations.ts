@@ -271,6 +271,40 @@ const migrations: Migration[] = [
       );
     },
   },
+  {
+    version: 7,
+    up: async (db) => {
+      // Свои категории у «Путешествий». После импорта эксельки общих категорий
+      // не остаётся, сфера пустеет — и трату в ней нельзя сохранить.
+      const row = await db.getFirstAsync<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM categories
+         WHERE kind = 'expense' AND (sphere_id IS NULL OR sphere_id = ?)`,
+        [TRAVEL_SPHERE_ID]
+      );
+      if ((row?.n ?? 0) === 0) {
+        for (let i = 0; i < TRAVEL_CATEGORIES.length; i++) {
+          const [id, name, icon] = TRAVEL_CATEGORIES[i];
+          await db.runAsync(
+            `INSERT OR IGNORE INTO categories
+               (id, user_id, name, icon, is_default, sort_order, kind, sphere_id)
+             VALUES (?, ?, ?, ?, 0, ?, 'expense', ?)`,
+            [id, LOCAL_USER_ID, name, icon, 200 + i, TRAVEL_SPHERE_ID]
+          );
+        }
+      }
+    },
+  },
+];
+
+/** Категории сферы «Путешествия» (сеются и мигацией, и конвертером эксельки). */
+export const TRAVEL_CATEGORIES: [string, string, string][] = [
+  ['trv_food', 'Еда', 'restaurant-outline'],
+  ['trv_transport', 'Транспорт', 'bus-outline'],
+  ['trv_lodging', 'Жильё', 'bed-outline'],
+  ['trv_fun', 'Развлечения', 'game-controller-outline'],
+  ['trv_shopping', 'Покупки', 'bag-outline'],
+  ['trv_health', 'Здоровье', 'medkit-outline'],
+  ['trv_other', 'Прочее', 'ellipsis-horizontal-outline'],
 ];
 
 /** Текущая целевая версия схемы. */

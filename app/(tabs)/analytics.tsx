@@ -86,6 +86,17 @@ function WalletAnalytics({ home }: { home: string }) {
     () => computeMonthlyOverview(month, monthTx, spheres, home),
     [month, monthTx, spheres, home]
   );
+
+  // Фильтр сфер для графиков (категории/дни/дни недели): сводка всегда полная,
+  // а структуру трат можно смотреть без поездок и прочих выбросов
+  const [chartSphere, setChartSphere] = useState<string | null>(null);
+  const charts = useMemo(() => {
+    if (!chartSphere) return overview;
+    const filtered = monthTx.filter(
+      (tx) => tx.type === 'income' || tx.sphere_id === chartSphere
+    );
+    return computeMonthlyOverview(month, filtered, spheres, home);
+  }, [overview, chartSphere, month, monthTx, spheres, home]);
   const history = useMemo(
     () => computeMonthlyHistory(allTx, home),
     [allTx, home]
@@ -97,16 +108,16 @@ function WalletAnalytics({ home }: { home: string }) {
       ? ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
       : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-  const pieData = overview.byCategory.map((c, i) => ({
+  const pieData = charts.byCategory.map((c, i) => ({
     value: c.total,
     color: colors.chart[i % colors.chart.length],
   }));
-  const weekdayData = overview.byWeekday.map((v, i) => ({
+  const weekdayData = charts.byWeekday.map((v, i) => ({
     value: Math.round(v),
     label: weekdayLabels[i],
     frontColor: colors.primary,
   }));
-  const barData = overview.byDay.map((d) => ({
+  const barData = charts.byDay.map((d) => ({
     value: Math.round(d.total),
     label: String(new Date(d.day).getDate()),
     frontColor: colors.primary,
@@ -211,8 +222,31 @@ function WalletAnalytics({ home }: { home: string }) {
         </View>
       ) : null}
 
+      {/* Фильтр сфер для графиков ниже */}
+      <View style={styles.chartFilterRow}>
+        <Pressable
+          style={[styles.filterChip, chartSphere === null && styles.filterChipActive]}
+          onPress={() => setChartSphere(null)}
+        >
+          <Text style={[styles.filterText, chartSphere === null && styles.filterTextActive]}>
+            {t('common.all')}
+          </Text>
+        </Pressable>
+        {spheres.map((s) => (
+          <Pressable
+            key={s.id}
+            style={[styles.filterChip, chartSphere === s.id && styles.filterChipActive]}
+            onPress={() => setChartSphere(chartSphere === s.id ? null : s.id)}
+          >
+            <Text style={[styles.filterText, chartSphere === s.id && styles.filterTextActive]}>
+              {s.name}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       {/* По категориям */}
-      {overview.byCategory.length > 0 ? (
+      {charts.byCategory.length > 0 ? (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('analytics.byCategory')}</Text>
           <View style={styles.pieWrap}>
@@ -223,12 +257,12 @@ function WalletAnalytics({ home }: { home: string }) {
               innerRadius={58}
               innerCircleColor={colors.surface}
               centerLabelComponent={() => (
-                <Text style={styles.pieCenter}>{overview.byCategory.length}</Text>
+                <Text style={styles.pieCenter}>{charts.byCategory.length}</Text>
               )}
             />
           </View>
           <View style={styles.legend}>
-            {overview.byCategory.map((c, i) => (
+            {charts.byCategory.map((c, i) => (
               <View key={c.categoryId} style={styles.legendRow}>
                 <View
                   style={[styles.dot, { backgroundColor: colors.chart[i % colors.chart.length] }]}
@@ -289,7 +323,7 @@ function WalletAnalytics({ home }: { home: string }) {
       ) : null}
 
       {/* По дням недели */}
-      {overview.expenseCount > 1 ? (
+      {charts.expenseCount > 1 ? (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>{t('analytics.byWeekday')}</Text>
           <BarChart
@@ -645,6 +679,18 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   axisLabel: { color: colors.textFaint, fontSize: 10 },
   divider: { height: 1, backgroundColor: colors.border },
   allowanceLine: { fontSize: fontSize.sm, color: colors.primary, fontWeight: fontWeight.medium },
+  chartFilterRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  filterChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
+  filterText: { fontSize: fontSize.sm, color: colors.textMuted },
+  filterTextActive: { color: colors.primary, fontWeight: fontWeight.semibold },
   historyHeader: { flexDirection: 'row', gap: spacing.sm },
   historyRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: 3 },
   historyCell: { flex: 1, fontSize: fontSize.xs, color: colors.text, textAlign: 'right' },

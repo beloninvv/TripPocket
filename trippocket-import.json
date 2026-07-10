@@ -1,6 +1,6 @@
 {
  "version": 2,
- "exportedAt": 1783630909124,
+ "exportedAt": 1783632026581,
  "homeCurrency": "RUB",
  "trips": [],
  "transactions": [
@@ -17611,12 +17611,82 @@
  ],
  "categories": [
   {
+   "id": "trv_food",
+   "user_id": "local",
+   "name": "Еда",
+   "icon": "restaurant-outline",
+   "is_default": 0,
+   "sort_order": 200,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
+   "id": "trv_transport",
+   "user_id": "local",
+   "name": "Транспорт",
+   "icon": "bus-outline",
+   "is_default": 0,
+   "sort_order": 201,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
+   "id": "trv_lodging",
+   "user_id": "local",
+   "name": "Жильё",
+   "icon": "bed-outline",
+   "is_default": 0,
+   "sort_order": 202,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
+   "id": "trv_fun",
+   "user_id": "local",
+   "name": "Развлечения",
+   "icon": "game-controller-outline",
+   "is_default": 0,
+   "sort_order": 203,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
+   "id": "trv_shopping",
+   "user_id": "local",
+   "name": "Покупки",
+   "icon": "bag-outline",
+   "is_default": 0,
+   "sort_order": 204,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
+   "id": "trv_health",
+   "user_id": "local",
+   "name": "Здоровье",
+   "icon": "medkit-outline",
+   "is_default": 0,
+   "sort_order": 205,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
+   "id": "trv_other",
+   "user_id": "local",
+   "name": "Прочее",
+   "icon": "ellipsis-horizontal-outline",
+   "is_default": 0,
+   "sort_order": 206,
+   "kind": "expense",
+   "sphere_id": "sphere_travel"
+  },
+  {
    "id": "exp_eda-vne-doma",
    "user_id": "local",
    "name": "Еда вне дома",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 0,
+   "sort_order": 7,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17626,7 +17696,7 @@
    "name": "Продукты",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 1,
+   "sort_order": 8,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17636,7 +17706,7 @@
    "name": "Бары и рестораны",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 2,
+   "sort_order": 9,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17646,7 +17716,7 @@
    "name": "Транспорт",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 3,
+   "sort_order": 10,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17656,7 +17726,7 @@
    "name": "Алкоголь",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 4,
+   "sort_order": 11,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17666,7 +17736,7 @@
    "name": "Подарки",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 5,
+   "sort_order": 12,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17676,7 +17746,7 @@
    "name": "Здоровье",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 6,
+   "sort_order": 13,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17686,7 +17756,7 @@
    "name": "Одежда",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 7,
+   "sort_order": 14,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17696,7 +17766,7 @@
    "name": "Развлечения",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 8,
+   "sort_order": 15,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17706,7 +17776,7 @@
    "name": "Регулярные",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 9,
+   "sort_order": 16,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17716,7 +17786,7 @@
    "name": "Переводы",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 10,
+   "sort_order": 17,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17726,7 +17796,7 @@
    "name": "Прочее",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 11,
+   "sort_order": 18,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17736,7 +17806,7 @@
    "name": "Кот",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 12,
+   "sort_order": 19,
    "kind": "expense",
    "sphere_id": "sphere_daily"
   },
@@ -17746,7 +17816,7 @@
    "name": "Ремонт",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 13,
+   "sort_order": 20,
    "kind": "expense",
    "sphere_id": "sphere_home"
   },
@@ -17756,7 +17826,7 @@
    "name": "Ипотека",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 14,
+   "sort_order": 21,
    "kind": "expense",
    "sphere_id": "sphere_home"
   },
@@ -17766,7 +17836,7 @@
    "name": "ЖКХ",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 15,
+   "sort_order": 22,
    "kind": "expense",
    "sphere_id": "sphere_home"
   },
@@ -17776,7 +17846,7 @@
    "name": "Общежитие",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 16,
+   "sort_order": 23,
    "kind": "expense",
    "sphere_id": "sphere_home"
   },
@@ -17786,7 +17856,7 @@
    "name": "Все для дома",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 17,
+   "sort_order": 24,
    "kind": "expense",
    "sphere_id": "sphere_home"
   },
@@ -17796,7 +17866,7 @@
    "name": "Путешествия",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 18,
+   "sort_order": 25,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17806,7 +17876,7 @@
    "name": "Гаджеты",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 19,
+   "sort_order": 26,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17816,7 +17886,7 @@
    "name": "Праздники",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 20,
+   "sort_order": 27,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17826,7 +17896,7 @@
    "name": "Спорт",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 21,
+   "sort_order": 28,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17836,7 +17906,7 @@
    "name": "Крастота и здоровье",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 22,
+   "sort_order": 29,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17846,7 +17916,7 @@
    "name": "Образование",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 23,
+   "sort_order": 30,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17856,7 +17926,7 @@
    "name": "Машина",
    "icon": "pricetag-outline",
    "is_default": 0,
-   "sort_order": 24,
+   "sort_order": 31,
    "kind": "expense",
    "sphere_id": "sphere_major"
   },
@@ -17866,7 +17936,7 @@
    "name": "Стипендия",
    "icon": "library-outline",
    "is_default": 0,
-   "sort_order": 25,
+   "sort_order": 32,
    "kind": "income",
    "sphere_id": null
   },
@@ -17876,7 +17946,7 @@
    "name": "Репетиторство",
    "icon": "school-outline",
    "is_default": 0,
-   "sort_order": 26,
+   "sort_order": 33,
    "kind": "income",
    "sphere_id": null
   },
@@ -17886,7 +17956,7 @@
    "name": "Зарплата",
    "icon": "cash-outline",
    "is_default": 0,
-   "sort_order": 27,
+   "sort_order": 34,
    "kind": "income",
    "sphere_id": null
   },
@@ -17896,7 +17966,7 @@
    "name": "Перевод",
    "icon": "swap-horizontal-outline",
    "is_default": 0,
-   "sort_order": 28,
+   "sort_order": 35,
    "kind": "income",
    "sphere_id": null
   },
@@ -17906,7 +17976,7 @@
    "name": "Кэшбэк",
    "icon": "card-outline",
    "is_default": 0,
-   "sort_order": 29,
+   "sort_order": 36,
    "kind": "income",
    "sphere_id": null
   },
@@ -17916,7 +17986,7 @@
    "name": "Прочее",
    "icon": "cash-outline",
    "is_default": 0,
-   "sort_order": 30,
+   "sort_order": 37,
    "kind": "income",
    "sphere_id": null
   },
@@ -17926,7 +17996,7 @@
    "name": "Подарки",
    "icon": "gift-outline",
    "is_default": 0,
-   "sort_order": 31,
+   "sort_order": 38,
    "kind": "income",
    "sphere_id": null
   },
@@ -17936,7 +18006,7 @@
    "name": "Вклад",
    "icon": "trending-up-outline",
    "is_default": 0,
-   "sort_order": 32,
+   "sort_order": 39,
    "kind": "income",
    "sphere_id": null
   }

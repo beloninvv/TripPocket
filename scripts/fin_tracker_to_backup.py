@@ -121,6 +121,23 @@ def main() -> None:
             "spent_at": spent, "created_at": spent,
         })
 
+    # Категории сферы «Путешествия» (в экселе такого листа нет)
+    travel_cats = [
+        ("trv_food", "Еда", "restaurant-outline"),
+        ("trv_transport", "Транспорт", "bus-outline"),
+        ("trv_lodging", "Жильё", "bed-outline"),
+        ("trv_fun", "Развлечения", "game-controller-outline"),
+        ("trv_shopping", "Покупки", "bag-outline"),
+        ("trv_health", "Здоровье", "medkit-outline"),
+        ("trv_other", "Прочее", "ellipsis-horizontal-outline"),
+    ]
+    for cid, name, icon in travel_cats:
+        categories[cid] = {
+            "id": cid, "user_id": USER, "name": name, "icon": icon,
+            "is_default": 0, "sort_order": 200 + len(categories),
+            "kind": "expense", "sphere_id": "sphere_travel",
+        }
+
     # Категории расходов из «Справочников» (чтобы сохранить порядок и пустые)
     ref = wb["Справочники"]
     ref_cols = {"Повседневные": ("B", "sphere_daily"), "Квартира": ("E", "sphere_home"),
