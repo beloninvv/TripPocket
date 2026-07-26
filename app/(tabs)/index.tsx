@@ -58,13 +58,13 @@ export default function AddTransactionScreen() {
   const [inTrip, setInTrip] = useState(false);
   const [note, setNote] = useState('');
   const [spentAt, setSpentAt] = useState<number | null>(null); // null = «Сейчас»
-  const [oneTime, setOneTime] = useState(false);
   const [saving, setSaving] = useState(false);
   const [savedFlash, setSavedFlash] = useState(false);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const currencyTouched = useRef(false);
   const sphereTouched = useRef(false);
   const tripTouched = useRef(false);
+  const categoryTouched = useRef(false);
 
   // Сводка месяца для шапки
   const monthFrom = startOfMonth(Date.now());
@@ -104,17 +104,25 @@ export default function AddTransactionScreen() {
     });
   }, [spheres, inTrip]);
 
-  // Тумблер поездки: по умолчанию включён, если сегодня внутри дат поездки
+  // Тумблер поездки: последний выбор пользователя, иначе — включён,
+  // если сегодня внутри дат поездки
   useEffect(() => {
     if (tripTouched.current) return;
     if (!trip) {
       setInTrip(false);
       return;
     }
-    const now = Date.now();
-    const started = trip.start_date == null || now >= startOfDay(trip.start_date);
-    const notEnded = trip.end_date == null || now <= trip.end_date + 86400000;
-    setInTrip(trip.start_date != null && started && notEnded);
+    getSetting('last_in_trip').then((last) => {
+      if (tripTouched.current) return;
+      if (last != null) {
+        setInTrip(last === '1');
+        return;
+      }
+      const now = Date.now();
+      const started = trip.start_date == null || now >= startOfDay(trip.start_date);
+      const notEnded = trip.end_date == null || now <= trip.end_date + 86400000;
+      setInTrip(trip.start_date != null && started && notEnded);
+    });
   }, [trip?.id]);
 
   function pickCurrency(code: string) {
@@ -135,6 +143,7 @@ export default function AddTransactionScreen() {
       setCurrency(tpl.currency);
     }
     setType('expense');
+    categoryTouched.current = true;
     setCategoryId(tpl.category_id);
     if (tpl.note) setNote(tpl.note);
   }
@@ -153,6 +162,22 @@ export default function AddTransactionScreen() {
       setCategoryId(null);
     }
   }, [visibleCategories, categoryId]);
+
+  // Стартовая категория: последняя использованная, если она видна
+  useEffect(() => {
+    if (categoryTouched.current || categoryId || visibleCategories.length === 0) return;
+    getSetting('last_category').then((last) => {
+      if (categoryTouched.current || !last) return;
+      if (visibleCategories.some((c) => c.id === last)) {
+        setCategoryId((cur) => cur ?? last);
+      }
+    });
+  }, [visibleCategories, categoryId]);
+
+  function pickCategory(id: string) {
+    categoryTouched.current = true;
+    setCategoryId(id);
+  }
 
   const todaySpent = useMemo(() => {
     const today = startOfDay(Date.now());
@@ -222,15 +247,17 @@ export default function AddTransactionScreen() {
         rateUsed,
         note: note.trim() || null,
         spentAt: spentAt ?? undefined,
-        oneTime: isExpense && oneTime,
       });
       setSetting('last_currency', currency).catch(() => {});
+      if (isExpense) {
+        setSetting('last_category', categoryId).catch(() => {});
+        if (trip) setSetting('last_in_trip', useTrip ? '1' : '0').catch(() => {});
+      }
       reloadMonth();
-      // Сброс для следующей записи, категорию/валюту/сферу сохраняем
+      // Сброс для следующей записи; категорию/валюту/сферу/поездку сохраняем
       setAmount('');
       setNote('');
       setSpentAt(null);
-      setOneTime(false);
       setSavedFlash(true);
       if (flashTimer.current) clearTimeout(flashTimer.current);
       flashTimer.current = setTimeout(() => setSavedFlash(false), 1800);
@@ -366,7 +393,7 @@ export default function AddTransactionScreen() {
             <CategoryPicker
               categories={visibleCategories}
               value={categoryId}
-              onChange={setCategoryId}
+              onChange={pickCategory}
             />
           </View>
 
@@ -407,15 +434,6 @@ export default function AddTransactionScreen() {
             nullLabel={t('common.now')}
             locale={i18n.language}
           />
-
-          {type === 'expense' ? (
-            <ToggleRow
-              label={t('add.oneTime')}
-              hint={t('add.oneTimeHint')}
-              value={oneTime}
-              onValueChange={setOneTime}
-            />
-          ) : null}
 
           <Button
             title={t('common.save')}

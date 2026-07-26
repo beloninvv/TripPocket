@@ -38,8 +38,6 @@
     "monthSpent": "Month",
     "inTrip": "On the trip",
     "inTripHint": "Counts toward the trip budget and analytics",
-    "oneTime": "One-time expense",
-    "oneTimeHint": "Lodging, tickets — not spread over days in the forecast",
     "noActiveTrip": "Create a trip first",
     "createTrip": "Create trip"
   },
@@ -77,7 +75,6 @@
     "cumulative": "Cumulative",
     "dailyAllowance": "Can spend ~{{amount}}/day · {{days}} days left",
     "perDay": "Avg per day",
-    "forecast": "Forecast to end",
     "transactions": "Expenses",
     "avgCheck": "Avg expense",
     "biggest": "Biggest",
@@ -96,6 +93,7 @@
     "endDate": "End",
     "active": "Active",
     "makeActive": "Make active",
+    "deselectHint": "Tap the active trip to deselect it — then the Add screen hides the trip toggle",
     "deleteConfirm": "Delete trip and all its expenses?"
   },
   "settings": {

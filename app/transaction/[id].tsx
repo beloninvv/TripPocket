@@ -9,7 +9,6 @@ import { CurrencyPicker } from '../../src/components/CurrencyPicker';
 import { DateField } from '../../src/components/DateField';
 import { ModalHeader } from '../../src/components/ModalHeader';
 import { TextField } from '../../src/components/TextField';
-import { ToggleRow } from '../../src/components/ToggleRow';
 import { useCategories, useSpheres } from '../../src/hooks/data';
 import type { TransactionType } from '../../src/db/types';
 import {
@@ -42,7 +41,6 @@ export default function EditTransactionScreen() {
   const [tripId, setTripId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [spentAt, setSpentAt] = useState<number>(Date.now());
-  const [oneTime, setOneTime] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -58,7 +56,6 @@ export default function EditTransactionScreen() {
         setTripId(tx.trip_id);
         setNote(tx.note ?? '');
         setSpentAt(tx.spent_at);
-        setOneTime(tx.one_time === 1);
       }
       setLoaded(true);
     })();
@@ -104,7 +101,6 @@ export default function EditTransactionScreen() {
         rateUsed,
         note: note.trim() || null,
         spentAt,
-        oneTime,
       });
       router.back();
     } finally {
@@ -175,15 +171,6 @@ export default function EditTransactionScreen() {
             onChange={(v) => v != null && setSpentAt(v)}
             locale={i18n.language}
           />
-
-          {type === 'expense' ? (
-            <ToggleRow
-              label={t('add.oneTime')}
-              hint={t('add.oneTimeHint')}
-              value={oneTime}
-              onValueChange={setOneTime}
-            />
-          ) : null}
 
           <Button
             title={t('common.save')}

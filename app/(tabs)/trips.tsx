@@ -19,8 +19,9 @@ export default function TripsScreen() {
   const { trips, reload } = useTrips();
   const { trip: active, reload: reloadActive } = useActiveTrip();
 
+  // Тап по активной поездке снимает выбор — в «Добавить» пропадает тумблер поездки
   async function makeActive(id: string) {
-    await setActiveTrip(id);
+    await setActiveTrip(active?.id === id ? '' : id);
     await Promise.all([reload(), reloadActive()]);
   }
 
@@ -30,6 +31,9 @@ export default function TripsScreen() {
         data={trips}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
+        ListHeaderComponent={
+          active ? <Text style={styles.hint}>{t('trips.deselectHint')}</Text> : null
+        }
         ListEmptyComponent={<Text style={styles.empty}>{t('trips.empty')}</Text>}
         renderItem={({ item }) => {
           const isActive = active?.id === item.id;
@@ -74,6 +78,11 @@ export default function TripsScreen() {
 
 const makeStyles = (colors: Colors) => StyleSheet.create({
   list: { padding: spacing.lg, gap: spacing.md, paddingBottom: 96 },
+  hint: {
+    color: colors.textFaint,
+    fontSize: fontSize.sm,
+    marginBottom: spacing.xs,
+  },
   empty: {
     textAlign: 'center',
     color: colors.textFaint,

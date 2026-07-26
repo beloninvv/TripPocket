@@ -8,6 +8,8 @@ export type SettingKey =
   | 'active_trip_id'
   | 'last_currency'
   | 'last_sphere'
+  | 'last_category'
+  | 'last_in_trip'
   | 'theme';
 
 export async function getSetting(key: SettingKey): Promise<string | null> {

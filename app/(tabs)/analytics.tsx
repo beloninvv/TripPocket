@@ -465,12 +465,6 @@ function TripAnalytics({ tripId }: { tripId: string }) {
 
         <View style={styles.statRow}>
           <Stat label={t('analytics.perDay')} value={formatAmount(stats.avgPerDay, stats.base)} />
-          {stats.forecastTotal != null ? (
-            <Stat
-              label={t('analytics.forecast')}
-              value={formatAmount(stats.forecastTotal, stats.base)}
-            />
-          ) : null}
         </View>
 
         <View style={styles.divider} />
