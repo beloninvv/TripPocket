@@ -58,6 +58,7 @@
     "noSphere": "No sphere",
     "incomeBySource": "Income by source",
     "history": "By month",
+    "trends": "Month comparison",
     "day": "day",
     "limit": "limit",
     "overLimit": "over limit"

@@ -22,6 +22,8 @@ import {
   computeMonthlyOverview,
   computeTripStats,
 } from '../../src/services/analytics';
+import type { MonthHistoryRow } from '../../src/services/analytics';
+import type { SphereRow } from '../../src/db/types';
 import { Colors, fontSize, fontWeight, radius, spacing } from '../../src/theme';
 import { useTheme } from '../../src/theme/ThemeProvider';
 
@@ -341,42 +343,152 @@ function WalletAnalytics({ home }: { home: string }) {
         </View>
       ) : null}
 
-      {/* История по месяцам */}
+      {/* Сравнение по месяцам */}
       {history.length > 1 ? (
-        <View style={styles.card}>
-          <Text style={styles.sectionTitle}>{t('overview.history')}</Text>
-          <View style={styles.historyHeader}>
-            <Text style={[styles.historyCell, styles.historyMonth]}> </Text>
-            <Text style={styles.historyCell}>{t('overview.expense')}</Text>
-            <Text style={styles.historyCell}>{t('overview.income')}</Text>
-            <Text style={styles.historyCell}>Δ</Text>
-          </View>
-          {[...history].reverse().map((row) => (
-            <View key={row.month} style={styles.historyRow}>
-              <Text style={[styles.historyCell, styles.historyMonth]}>
-                {new Date(row.month).toLocaleDateString(
-                  i18n.language === 'ru' ? 'ru-RU' : 'en-US',
-                  { month: 'short', year: '2-digit' }
-                )}
-              </Text>
-              <Text style={styles.historyCell}>
-                {formatShort(row.expense)}
-              </Text>
-              <Text style={styles.historyCell}>{formatShort(row.income)}</Text>
-              <Text
-                style={[
-                  styles.historyCell,
-                  { color: row.delta >= 0 ? colors.success : colors.danger },
-                ]}
-              >
-                {row.delta >= 0 ? '+' : ''}
-                {formatShort(row.delta)}
-              </Text>
-            </View>
-          ))}
-        </View>
+        <MonthTrends
+          history={history}
+          spheres={spheres}
+          selectedMonth={month}
+          onPickMonth={setMonth}
+        />
       ) : null}
     </ScrollView>
+  );
+}
+
+/* ==================== Сравнение показателей по месяцам ==================== */
+
+/**
+ * Тренд одного выбранного показателя (расход/доход/дельта или конкретная сфера)
+ * по последним месяцам. Столбец текущего месяца подсвечен; тап по столбцу
+ * переключает месяц в сводке выше. Под графиком — изменение к прошлому месяцу.
+ */
+function MonthTrends({
+  history,
+  spheres,
+  selectedMonth,
+  onPickMonth,
+}: {
+  history: MonthHistoryRow[];
+  spheres: SphereRow[];
+  selectedMonth: number;
+  onPickMonth: (month: number) => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [metric, setMetric] = useState<string>('expense');
+
+  // Сферы, у которых были траты хоть в одном месяце
+  const sphereChips = useMemo(
+    () => spheres.filter((s) => history.some((h) => (h.bySphere.get(s.id) ?? 0) > 0)),
+    [spheres, history]
+  );
+
+  // Если выбранная сфера исчезла из данных — вернуться к расходу
+  const validKeys = useMemo(
+    () => new Set(['expense', 'income', 'delta', ...sphereChips.map((s) => s.id)]),
+    [sphereChips]
+  );
+  useEffect(() => {
+    if (!validKeys.has(metric)) setMetric('expense');
+  }, [validKeys, metric]);
+
+  const isDelta = metric === 'delta';
+  const valueOf = (h: MonthHistoryRow): number =>
+    metric === 'expense'
+      ? h.expense
+      : metric === 'income'
+        ? h.income
+        : metric === 'delta'
+          ? h.delta
+          : h.bySphere.get(metric) ?? 0;
+
+  const monthShort = (m: number) =>
+    new Date(m).toLocaleDateString(i18n.language === 'ru' ? 'ru-RU' : 'en-US', {
+      month: 'short',
+    });
+
+  const idle = colors.chart[colors.chart.length - 1]; // нейтральный серо-синий
+  const rows = history.slice(-12); // последние 12 месяцев, график скроллится
+  const barData = rows.map((h) => {
+    const v = valueOf(h);
+    const selected = h.month === selectedMonth;
+    return {
+      value: Math.round(v),
+      label: monthShort(h.month),
+      frontColor: selected
+        ? colors.primary
+        : isDelta
+          ? v >= 0
+            ? colors.success
+            : colors.danger
+          : idle,
+      onPress: () => onPickMonth(h.month),
+    };
+  });
+
+  // Изменение выбранного месяца к предыдущему
+  const idx = history.findIndex((h) => h.month === selectedMonth);
+  let mom: { text: string; up: boolean } | null = null;
+  if (idx > 0) {
+    const cur = valueOf(history[idx]);
+    const prev = valueOf(history[idx - 1]);
+    const diff = cur - prev;
+    if (Math.round(diff) !== 0) {
+      const prevLabel = monthShort(history[idx - 1].month);
+      const text =
+        isDelta || prev === 0
+          ? `${diff > 0 ? '+' : ''}${formatShort(diff)} · ${prevLabel}`
+          : `${diff > 0 ? '+' : ''}${Math.round((diff / Math.abs(prev)) * 100)}% · ${prevLabel}`;
+      mom = { text, up: diff > 0 };
+    }
+  }
+
+  const metricChips = [
+    { key: 'expense', label: t('overview.expense') },
+    { key: 'income', label: t('overview.income') },
+    { key: 'delta', label: 'Δ' },
+    ...sphereChips.map((s) => ({ key: s.id, label: s.name })),
+  ];
+
+  return (
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>{t('overview.trends')}</Text>
+      <View style={styles.chartFilterRow}>
+        {metricChips.map((c) => (
+          <Pressable
+            key={c.key}
+            style={[styles.filterChip, metric === c.key && styles.filterChipActive]}
+            onPress={() => setMetric(c.key)}
+          >
+            <Text style={[styles.filterText, metric === c.key && styles.filterTextActive]}>
+              {c.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {mom ? (
+        <Text style={styles.momLine}>
+          {mom.up ? '▲' : '▼'} {mom.text}
+        </Text>
+      ) : null}
+      <BarChart
+        data={barData}
+        barWidth={16}
+        spacing={14}
+        initialSpacing={12}
+        roundedTop
+        noOfSections={3}
+        yAxisThickness={0}
+        xAxisThickness={1}
+        xAxisColor={colors.border}
+        hideRules
+        scrollToEnd
+        xAxisLabelTextStyle={styles.axisLabel}
+        yAxisTextStyle={styles.axisLabel}
+      />
+    </View>
   );
 }
 
@@ -685,10 +797,7 @@ const makeStyles = (colors: Colors) => StyleSheet.create({
   filterChipActive: { backgroundColor: colors.primaryMuted, borderColor: colors.primary },
   filterText: { fontSize: fontSize.sm, color: colors.textMuted },
   filterTextActive: { color: colors.primary, fontWeight: fontWeight.semibold },
-  historyHeader: { flexDirection: 'row', gap: spacing.sm },
-  historyRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: 3 },
-  historyCell: { flex: 1, fontSize: fontSize.xs, color: colors.text, textAlign: 'right' },
-  historyMonth: { flex: 1.2, textAlign: 'left', color: colors.textMuted },
+  momLine: { fontSize: fontSize.sm, color: colors.textMuted, fontWeight: fontWeight.medium },
   currencyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   currencyCode: {
     width: 52,
