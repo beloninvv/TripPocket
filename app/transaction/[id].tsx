@@ -71,6 +71,13 @@ export default function EditTransactionScreen() {
     [categories, type, sphereId]
   );
 
+  // Смена сферы: категория чужой сферы больше не подходит — просим выбрать заново
+  function pickSphere(next: string | null) {
+    setSphereId(next);
+    const cat = categories.find((c) => c.id === categoryId);
+    if (cat && cat.sphere_id != null && cat.sphere_id !== next) setCategoryId(null);
+  }
+
   const computed = evalExpression(amount);
   const amountValue = computed != null && computed > 0 ? computed : null;
   const canSave = !!id && amountValue != null && !!categoryId && !saving;
@@ -95,6 +102,7 @@ export default function EditTransactionScreen() {
         amount: amountValue,
         currency,
         categoryId,
+        sphereId: type === 'expense' ? sphereId : null,
         amountHome: homeConv.amountBase,
         rateHome: homeConv.rate,
         amountBase,
@@ -142,7 +150,7 @@ export default function EditTransactionScreen() {
                 {spheres.map((s) => (
                   <Text
                     key={s.id}
-                    onPress={() => setSphereId(sphereId === s.id ? null : s.id)}
+                    onPress={() => pickSphere(sphereId === s.id ? null : s.id)}
                     style={[styles.chip, sphereId === s.id && styles.chipActive]}
                   >
                     {s.name}
