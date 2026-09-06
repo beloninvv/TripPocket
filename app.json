@@ -24,7 +24,11 @@
     },
     "plugins": [
       "expo-router",
-      "expo-sqlite"
+      "expo-sqlite",
+      "@react-native-community/datetimepicker",
+      "expo-sharing",
+      "expo-status-bar",
+      "expo-font"
     ],
     "extra": {
       "router": {},
@@ -33,7 +37,7 @@
       }
     },
     "owner": "vladimirbelonin",
-    "runtimeVersion": "exposdk:54.0.0",
+    "runtimeVersion": "exposdk:57.0.0",
     "updates": {
       "url": "https://u.expo.dev/f574f4f1-98f2-4753-b1c9-fa3a27ce2e86"
     }
