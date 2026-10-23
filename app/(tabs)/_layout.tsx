@@ -27,7 +27,7 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.add'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="add-circle-outline" color={color} size={size} />
+            <Ionicons name="add-circle-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -36,7 +36,7 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.expenses'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="list-outline" color={color} size={size} />
+            <Ionicons name="list-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -45,7 +45,7 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.analytics'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pie-chart-outline" color={color} size={size} />
+            <Ionicons name="pie-chart-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -54,7 +54,7 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.trips'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="airplane-outline" color={color} size={size} />
+            <Ionicons name="airplane-outline" color={color as string} size={size} />
           ),
         }}
       />
@@ -63,7 +63,7 @@ export default function TabsLayout() {
         options={{
           title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" color={color} size={size} />
+            <Ionicons name="settings-outline" color={color as string} size={size} />
           ),
         }}
       />

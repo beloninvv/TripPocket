@@ -32,7 +32,7 @@ export default function TripsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={
-          active ? <Text style={styles.hint}>{t('trips.deselectHint')}</Text> : null
+          active ? <Text style={styles.hint}>{t('trips.deselectHint')}</Text> : undefined
         }
         ListEmptyComponent={<Text style={styles.empty}>{t('trips.empty')}</Text>}
         renderItem={({ item }) => {
