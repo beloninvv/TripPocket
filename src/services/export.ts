@@ -8,6 +8,8 @@ import i18n from '../i18n';
 import { categoryLabel } from '../lib/category';
 import type {
   CategoryRow,
+  FundEntryRow,
+  FundRow,
   RateRow,
   SettingRow,
   SphereRow,
@@ -32,6 +34,9 @@ export type BackupV2 = {
   spheres: SphereRow[];
   settings: SettingRow[];
   rates: RateRow[];
+  // Копилки; в бэкапах до сборки 19 полей нет — тогда импорт копилки не трогает
+  funds?: FundRow[];
+  fundEntries?: FundEntryRow[];
 };
 
 /** Экранирование значения для CSV. */
@@ -91,14 +96,17 @@ async function buildCsv(): Promise<string> {
 /** Полный бэкап в JSON v2 — восстановление и внешняя аналитика. */
 async function buildJson(): Promise<string> {
   const db = getDb();
-  const [trips, transactions, categories, spheres, settings, rates] = await Promise.all([
-    db.getAllAsync<TripRow>('SELECT * FROM trips'),
-    db.getAllAsync<TransactionRow>('SELECT * FROM transactions'),
-    db.getAllAsync<CategoryRow>('SELECT * FROM categories'),
-    db.getAllAsync<SphereRow>('SELECT * FROM spheres'),
-    db.getAllAsync<SettingRow>('SELECT * FROM settings'),
-    db.getAllAsync<RateRow>('SELECT * FROM rates WHERE manual = 1'),
-  ]);
+  const [trips, transactions, categories, spheres, settings, rates, funds, fundEntries] =
+    await Promise.all([
+      db.getAllAsync<TripRow>('SELECT * FROM trips'),
+      db.getAllAsync<TransactionRow>('SELECT * FROM transactions'),
+      db.getAllAsync<CategoryRow>('SELECT * FROM categories'),
+      db.getAllAsync<SphereRow>('SELECT * FROM spheres'),
+      db.getAllAsync<SettingRow>('SELECT * FROM settings'),
+      db.getAllAsync<RateRow>('SELECT * FROM rates WHERE manual = 1'),
+      db.getAllAsync<FundRow>('SELECT * FROM funds'),
+      db.getAllAsync<FundEntryRow>('SELECT * FROM fund_entries'),
+    ]);
   const home = settings.find((s) => s.key === 'base_currency')?.value ?? 'RUB';
   const backup: BackupV2 = {
     version: 2,
@@ -110,6 +118,8 @@ async function buildJson(): Promise<string> {
     spheres,
     settings,
     rates,
+    funds,
+    fundEntries,
   };
   return JSON.stringify(backup, null, 2);
 }
@@ -239,6 +249,24 @@ async function importV2(data: BackupV2): Promise<ImportResult> {
          ON CONFLICT(base, currency) DO UPDATE SET rate = excluded.rate, updated_at = excluded.updated_at, manual = 1`,
         [r.base, r.currency, r.rate, r.updated_at ?? Date.now()]
       );
+    }
+    if (Array.isArray(data.funds)) {
+      await db.execAsync('DELETE FROM fund_entries; DELETE FROM funds;');
+      for (const f of data.funds) {
+        await db.runAsync(
+          `INSERT INTO funds (id, user_id, name, currency, budget, goal, target_date, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [f.id, f.user_id ?? LOCAL_USER_ID, f.name, f.currency, f.budget, f.goal, f.target_date, f.created_at]
+        );
+      }
+      for (const e of data.fundEntries ?? []) {
+        await db.runAsync(
+          `INSERT INTO fund_entries
+             (id, user_id, fund_id, type, amount, source, note, spent_at, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [e.id, e.user_id ?? LOCAL_USER_ID, e.fund_id, e.type, e.amount, e.source, e.note, e.spent_at, e.created_at]
+        );
+      }
     }
   });
   return { trips: data.trips?.length ?? 0, expenses: data.transactions.length };

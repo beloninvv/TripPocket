@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 
 import { ProgressBar } from '../../src/components/ProgressBar';
 import { Screen } from '../../src/components/Screen';
-import { useActiveTrip, useSpheres, useTransactions } from '../../src/hooks/data';
+import { useActiveTrip, useOwnDeposits, useSpheres, useTransactions } from '../../src/hooks/data';
 import { categoryLabel } from '../../src/lib/category';
 import { formatAmount } from '../../src/lib/currencies';
 import {
@@ -21,6 +21,7 @@ import {
   computeMonthlyHistory,
   computeMonthlyOverview,
   computeTripStats,
+  savedByMonth,
 } from '../../src/services/analytics';
 import type { MonthHistoryRow } from '../../src/services/analytics';
 import type { SphereRow } from '../../src/db/types';
@@ -83,10 +84,12 @@ function WalletAnalytics({ home }: { home: string }) {
   });
   // Вся история для таблицы месяцев
   const { transactions: allTx } = useTransactions();
+  const ownDeposits = useOwnDeposits(home);
+  const saved = useMemo(() => savedByMonth(ownDeposits), [ownDeposits]);
 
   const overview = useMemo(
-    () => computeMonthlyOverview(month, monthTx, spheres, home),
-    [month, monthTx, spheres, home]
+    () => computeMonthlyOverview(month, monthTx, spheres, home, saved.get(month) ?? 0),
+    [month, monthTx, spheres, home, saved]
   );
 
   // Фильтр сфер для графиков (категории/дни/дни недели): сводка всегда полная,
@@ -100,8 +103,8 @@ function WalletAnalytics({ home }: { home: string }) {
     return computeMonthlyOverview(month, filtered, spheres, home);
   }, [overview, chartSphere, month, monthTx, spheres, home]);
   const history = useMemo(
-    () => computeMonthlyHistory(allTx, home),
-    [allTx, home]
+    () => computeMonthlyHistory(allTx, home, saved),
+    [allTx, home, saved]
   );
 
   const isCurrentMonth = month === startOfMonth(Date.now());
@@ -158,6 +161,9 @@ function WalletAnalytics({ home }: { home: string }) {
             value={formatAmount(overview.income, home)}
             valueColor={colors.success}
           />
+          {overview.saved > 0 ? (
+            <Stat label={t('overview.saved')} value={formatAmount(overview.saved, home)} />
+          ) : null}
         </View>
         <View style={styles.divider} />
         <View style={styles.statRow}>

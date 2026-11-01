@@ -1,6 +1,7 @@
-import type { SphereRow, TripRow } from '../db/types';
+import type { FundEntryRow, FundRow, FundSource, SphereRow, TripRow } from '../db/types';
 import type { TransactionWithCategory } from '../repositories/transactionsRepo';
 import { dayCount, daysInMonth, startOfDay, startOfMonth } from '../lib/date';
+import { FUND_SOURCES } from '../lib/fund';
 
 export type CategoryStat = {
   categoryId: string;
@@ -192,7 +193,8 @@ export type MonthlyOverview = {
   month: number; // startOfMonth
   income: number;
   expense: number;
-  delta: number; // income - expense
+  saved: number; // отложено в копилки — не расход, но и не свободные деньги
+  delta: number; // income - expense - saved
   savingsRate: number | null; // delta / income
   bySphere: SphereStat[];
   byCategory: CategoryStat[]; // только расходы
@@ -214,7 +216,8 @@ export function computeMonthlyOverview(
   month: number,
   transactions: TransactionWithCategory[], // записи этого месяца
   spheres: SphereRow[],
-  home: string
+  home: string,
+  saved = 0
 ): MonthlyOverview {
   let income = 0;
   let expense = 0;
@@ -298,8 +301,9 @@ export function computeMonthlyOverview(
     month,
     income,
     expense,
-    delta: income - expense,
-    savingsRate: income > 0 ? (income - expense) / income : null,
+    saved,
+    delta: income - expense - saved,
+    savingsRate: income > 0 ? (income - expense - saved) / income : null,
     bySphere,
     byCategory: finalizeCategories(catMap, expense),
     byIncomeCategory: finalizeCategories(incomeCatMap, income),
@@ -324,18 +328,23 @@ export type MonthHistoryRow = {
 /** История по месяцам (как итоговая таблица в экселе), от старых к новым. */
 export function computeMonthlyHistory(
   transactions: TransactionWithCategory[], // все записи
-  home: string
+  home: string,
+  saved: Map<number, number> = new Map() // отложено в копилки по месяцам
 ): MonthHistoryRow[] {
   const map = new Map<number, MonthHistoryRow>();
-  for (const tx of transactions) {
-    const value = homeAmount(tx, home);
-    if (value == null) continue;
-    const month = startOfMonth(tx.spent_at);
+  const rowOf = (month: number): MonthHistoryRow => {
     let row = map.get(month);
     if (!row) {
       row = { month, expense: 0, income: 0, delta: 0, savingsRate: null, bySphere: new Map() };
       map.set(month, row);
     }
+    return row;
+  };
+  for (const month of saved.keys()) rowOf(month);
+  for (const tx of transactions) {
+    const value = homeAmount(tx, home);
+    if (value == null) continue;
+    const row = rowOf(startOfMonth(tx.spent_at));
     if (tx.type === 'income') {
       row.income += value;
     } else {
@@ -345,10 +354,87 @@ export function computeMonthlyHistory(
   }
   const rows = [...map.values()].sort((a, b) => a.month - b.month);
   for (const row of rows) {
-    row.delta = row.income - row.expense;
+    row.delta = row.income - row.expense - (saved.get(row.month) ?? 0);
     row.savingsRate = row.income > 0 ? row.delta / row.income : null;
   }
   return rows;
+}
+
+/* ============================= Копилка ============================= */
+
+export type FundSourceStat = {
+  source: FundSource | null; // null — траты из общей копилки
+  deposited: number;
+  spent: number;
+};
+
+export type FundStats = {
+  deposited: number; // пополнения от всех
+  spent: number;
+  balance: number;
+  own: number; // мои пополнения — прогресс к личной цели
+  goalLeft: number | null;
+  daysLeft: number | null; // null — даты нет или она прошла
+  monthlyNeeded: number | null; // сколько откладывать в месяц, чтобы успеть
+  bySource: FundSourceStat[];
+};
+
+const DAYS_PER_MONTH = 365.25 / 12;
+
+export function computeFundStats(
+  fund: FundRow,
+  entries: FundEntryRow[],
+  now = Date.now()
+): FundStats {
+  let deposited = 0;
+  let spent = 0;
+  const sources = new Map<FundSource | null, FundSourceStat>();
+
+  for (const e of entries) {
+    if (e.type === 'deposit') deposited += e.amount;
+    else spent += e.amount;
+    const stat = sources.get(e.source) ?? { source: e.source, deposited: 0, spent: 0 };
+    if (e.type === 'deposit') stat.deposited += e.amount;
+    else stat.spent += e.amount;
+    sources.set(e.source, stat);
+  }
+
+  const own = sources.get('me')?.deposited ?? 0;
+  const goalLeft = fund.goal != null ? Math.max(0, fund.goal - own) : null;
+
+  let daysLeft: number | null = null;
+  let monthlyNeeded: number | null = null;
+  if (fund.target_date != null && fund.target_date >= startOfDay(now)) {
+    daysLeft = dayCount(now, fund.target_date);
+    if (goalLeft != null && goalLeft > 0) {
+      monthlyNeeded = goalLeft / Math.max(1, daysLeft / DAYS_PER_MONTH);
+    }
+  }
+
+  const bySource = [...FUND_SOURCES, null].flatMap((s) => sources.get(s) ?? []);
+
+  return {
+    deposited,
+    spent,
+    balance: deposited - spent,
+    own,
+    goalLeft,
+    daysLeft,
+    monthlyNeeded,
+    bySource,
+  };
+}
+
+/** Мои пополнения копилок по месяцам (строка «Отложено» в обзоре кошелька). */
+export function savedByMonth(
+  deposits: Pick<FundEntryRow, 'amount' | 'spent_at'>[]
+): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const d of deposits) {
+    const month = startOfMonth(d.spent_at);
+    map.set(month, (map.get(month) ?? 0) + d.amount);
+  }
+  return map;
 }
 
 /* ============================ Помощники ============================ */

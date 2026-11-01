@@ -59,6 +59,34 @@ export type TransactionRow = {
   created_at: number;
 };
 
+export type FundRow = {
+  id: string;
+  user_id: string;
+  name: string;
+  currency: string; // все записи копилки — в этой валюте
+  budget: number | null; // общий бюджет, включая чужие деньги
+  goal: number | null; // сколько планирую отложить сам
+  target_date: number | null;
+  created_at: number;
+};
+
+export type FundEntryType = 'deposit' | 'expense';
+
+/** Чьи деньги: у пополнения обязательно, у траты null — из общей копилки. */
+export type FundSource = 'me' | 'my_parents' | 'partner_parents';
+
+export type FundEntryRow = {
+  id: string;
+  user_id: string;
+  fund_id: string;
+  type: FundEntryType;
+  amount: number;
+  source: FundSource | null;
+  note: string | null;
+  spent_at: number;
+  created_at: number;
+};
+
 export type RateRow = {
   base: string;
   currency: string;

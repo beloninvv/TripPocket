@@ -209,6 +209,8 @@ def main() -> None:
         app = json.loads(Path(args.app_backup).expanduser().read_text())
         backup["trips"] = app.get("trips", [])
         backup["rates"] = app.get("rates", [])
+        backup["funds"] = app.get("funds", [])
+        backup["fundEntries"] = app.get("fundEntries", [])
         have_tx = {t["id"] for t in transactions}
         app_txs = app.get("transactions", app.get("expenses", []))
         have_cat = {c["id"] for c in backup["categories"]}

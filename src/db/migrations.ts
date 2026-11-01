@@ -294,6 +294,38 @@ const migrations: Migration[] = [
       }
     },
   },
+  {
+    version: 8,
+    up: async (db) => {
+      // Копилки живут отдельно от журнала: их траты не попадают в аналитику
+      await db.execAsync(`
+        CREATE TABLE funds (
+          id          TEXT PRIMARY KEY,
+          user_id     TEXT NOT NULL,
+          name        TEXT NOT NULL,
+          currency    TEXT NOT NULL DEFAULT 'RUB',
+          budget      REAL,
+          goal        REAL,
+          target_date INTEGER,
+          created_at  INTEGER NOT NULL
+        );
+
+        CREATE TABLE fund_entries (
+          id          TEXT PRIMARY KEY,
+          user_id     TEXT NOT NULL,
+          fund_id     TEXT NOT NULL REFERENCES funds(id) ON DELETE CASCADE,
+          type        TEXT NOT NULL CHECK (type IN ('deposit', 'expense')),
+          amount      REAL NOT NULL,
+          source      TEXT,
+          note        TEXT,
+          spent_at    INTEGER NOT NULL,
+          created_at  INTEGER NOT NULL
+        );
+
+        CREATE INDEX idx_fund_entries_fund ON fund_entries(fund_id, spent_at);
+      `);
+    },
+  },
 ];
 
 /** Категории сферы «Путешествия» (сеются и мигацией, и конвертером эксельки). */

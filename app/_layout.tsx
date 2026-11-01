@@ -21,6 +21,9 @@ function ThemedApp() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="trip/new" options={{ presentation: 'modal' }} />
         <Stack.Screen name="trip/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="fund/[id]" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="fund/edit" options={{ presentation: 'modal' }} />
+        <Stack.Screen name="fund/entry" options={{ presentation: 'modal' }} />
         <Stack.Screen name="transaction/[id]" options={{ presentation: 'modal' }} />
         <Stack.Screen name="categories" options={{ presentation: 'modal' }} />
         <Stack.Screen name="templates" options={{ presentation: 'modal' }} />
